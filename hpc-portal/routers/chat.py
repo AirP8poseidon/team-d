@@ -32,9 +32,17 @@ _SEED_RESERVATIONS = [
     ("node07", "박엔지니어", "~12:00", "데이터 전처리", "2026-06-30T09:12:00"),
 ]
 
+# 데모용 대화 시드 — 점유 선언·위키 연계를 한눈에 보이게(가상 인물, 개인정보 아님).
+_SEED_MESSAGES = [
+    ("김연구", "node04 ResNet 학습 시작합니다~ 18시까지 점유 선언 보드에 올려뒀어요.", "2026-06-30T09:11:00"),
+    ("박엔지니어", "넵! 저는 node07에서 데이터 전처리 돌리는 중입니다.", "2026-06-30T09:13:00"),
+    ("이수민", "위키에 NCCL 타임아웃 잡는 법 글 올렸어요. 도움되면 도움됐어요 눌러주세요!", "2026-06-30T09:20:00"),
+    ("김연구", "방금 봤어요, NCCL_SOCKET_IFNAME 팁으로 해결했네요. 감사합니다!", "2026-06-30T09:35:00"),
+]
+
 
 def _ensure_extras(db) -> None:
-    """reservations 테이블을 멱등 가산 + 비었을 때만 시드. 1회만 수행."""
+    """reservations 테이블 멱등 가산 + reservations/messages 비었을 때만 시드. 1회만 수행."""
     global _extras_ready
     if _extras_ready:
         return
@@ -48,6 +56,12 @@ def _ensure_extras(db) -> None:
         db.executemany(
             "INSERT INTO reservations(node,who,until,purpose,created_at) VALUES(?,?,?,?,?)",
             _SEED_RESERVATIONS,
+        )
+    # messages 는 중앙 db.py 가 만들고 시드하지 않는다 — 비었을 때만 데모 대화 1회 가산.
+    if db.execute("SELECT COUNT(*) FROM messages").fetchone()[0] == 0:
+        db.executemany(
+            "INSERT INTO messages(sender,body,created_at) VALUES(?,?,?)",
+            _SEED_MESSAGES,
         )
     db.commit()
     _extras_ready = True
@@ -68,6 +82,7 @@ class ReservationIn(BaseModel):
 @router.get("/messages")
 def get_messages(after: Optional[int] = None, q: Optional[str] = None, db=Depends(db_dep)):
     """q가 있으면 body/sender 부분검색(시간순). 아니면 after 증분, 없으면 최근 50건(T7)."""
+    _ensure_extras(db)
     q = (q or "").strip()
     if q:
         like = f"%{q}%"

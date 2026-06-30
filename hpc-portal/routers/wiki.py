@@ -43,7 +43,46 @@ def _ensure_extras(db) -> None:
         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
         "post_id INTEGER, author TEXT, body TEXT, created_at TEXT)"
     )
-    # 중앙 시드 글(1·3)에 데모용 댓글을 비었을 때만 1회 부착
+    # ── 데모 시드(통합본에서도 태그칩·도움순·댓글이 바로 보이도록) ──────────────
+    # 중앙 시드 글(1·2·3)에 태그/도움수를 '비어있을 때만' 1회 부여(멱등).
+    for pid, tg, hp in (
+        (1, "SLURM,sbatch,입문", 1),
+        (2, "MPI,분산학습", 1),
+        (3, "스토리지,NFS,트러블슈팅", 1),
+    ):
+        db.execute(
+            "UPDATE posts SET tags=?, helpful=? "
+            "WHERE id=? AND (tags IS NULL OR tags='') AND COALESCE(helpful,0)=0",
+            (tg, hp, pid),
+        )
+    # 차별화 기능(태그/필터/도움순/점유보드 연계)을 한눈에 보여줄 노하우 글 — 제목 중복 없을 때만 추가(멱등).
+    demo_posts = [
+        ("GPU 메모리 부족(OOM) 빠른 진단", "김연구",
+         "nvidia-smi 로 점유 확인 → batch_size/precision 조정. torch.cuda.empty_cache() 도 체크.",
+         "GPU,트러블슈팅,PyTorch", 1),
+        ("분산학습 NCCL 타임아웃 잡기", "박엔지니어",
+         "NCCL_SOCKET_IFNAME 으로 인터페이스 고정, NCCL_DEBUG=INFO 로 로그 확인.",
+         "NCCL,분산학습,GPU", 1),
+        ("Conda 환경 공유 베스트프랙티스", "이수민",
+         "environment.yml 로 고정 후 conda env export --no-builds 로 OS 차이 흡수.",
+         "환경설정,Conda", 0),
+        ("대용량 데이터셋은 /scratch 로", "김연구",
+         "홈 대신 /scratch 에 두고 학습. 끝나면 정리하기(쿼터 공유).",
+         "스토리지,데이터", 1),
+        ("sbatch 배열 작업(job array) 예제", "박엔지니어",
+         "#SBATCH --array=0-9 로 하이퍼파라미터 스윕을 한 번에. $SLURM_ARRAY_TASK_ID 활용.",
+         "SLURM,sbatch", 0),
+        ("노드 점유 에티켓 — 채팅 점유보드 쓰는 법", "이수민",
+         "장시간 점유 전 채팅 위젯의 '점유 선언 보드'에 노드/예상시간/용도를 남기면 충돌이 줄어요.",
+         "운영,점유", 1),
+    ]
+    for title, author, body, tags, hp in demo_posts:
+        db.execute(
+            "INSERT INTO posts(title,author,body,created_at,tags,helpful) "
+            "SELECT ?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM posts WHERE title=?)",
+            (title, author, body, "2026-06-30T08:00:00", tags, hp, title),
+        )
+    # 댓글: 중앙 글(1·3) + 데모 글 일부에 비었을 때만 1회 부착
     if db.execute("SELECT COUNT(*) FROM comments").fetchone()[0] == 0:
         seed = [
             (1, "lee", "sbatch 쓸 때 --gres=gpu:1 빼먹어서 CPU로 돌던 적 있어요. 꼭 확인!", "2026-06-30T09:30:00"),
@@ -53,6 +92,16 @@ def _ensure_extras(db) -> None:
         db.executemany(
             "INSERT INTO comments(post_id,author,body,created_at) VALUES(?,?,?,?)", seed
         )
+        for title, a, b in (
+            ("GPU 메모리 부족(OOM) 빠른 진단", "정연구", "gradient checkpointing 도 메모리 많이 아껴요!"),
+            ("노드 점유 에티켓 — 채팅 점유보드 쓰는 법", "한엔지니어", "보드 덕분에 node07 겹침이 확 줄었어요."),
+        ):
+            row = db.execute("SELECT id FROM posts WHERE title=?", (title,)).fetchone()
+            if row:
+                db.execute(
+                    "INSERT INTO comments(post_id,author,body,created_at) VALUES(?,?,?,?)",
+                    (row[0], a, b, "2026-06-30T12:00:00"),
+                )
     db.commit()
     _extras_ready = True
 
