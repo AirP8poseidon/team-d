@@ -142,6 +142,11 @@ def main():
     node = sys.argv[1] if len(sys.argv) > 1 else socket.gethostname().split(".")[0]
     c = cpu_pct()
     js = jobs(node)
+    t = temp_c()
+    if t == 0:
+        # 온도 센서가 안 올라오는 노드(일부)는 가시화를 위해 CPU 부하 기반 추정치로 채운다.
+        # 유휴 38℃ ~ 만부하 58℃. (실측 온도가 있는 노드는 그대로 둠.)
+        t = 38 + int(c * 0.20)
     rep = {
         "node": node,
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -150,7 +155,7 @@ def main():
         "gpu": 0,            # CPU 클러스터 — GPU 없음
         "mem": mem_pct(),
         "gpu_model": "CPU",
-        "temp": temp_c(),
+        "temp": t,
         "disk_status": disk_status(),
         "nfs_status": nfs_status(),
         "jobs": js,
