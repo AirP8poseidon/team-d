@@ -188,6 +188,37 @@
   }
   .sort-toggle:hover{ border-color:var(--blue); color:var(--blue); }
 
+  /* ── 2단 레이아웃 (옵션 A): 좌 게시판(메인) · 우 서버환경(참조) ── */
+  .wiki-grid{
+    display:grid; grid-template-columns:minmax(0,1.85fr) minmax(280px,1fr);
+    gap:22px; align-items:start; margin-top:4px;
+  }
+  .wiki-main h2.section{ margin-top:6px; }
+  .wiki-side h2.section{ margin-top:6px; }
+  .wiki-side .servers{ grid-template-columns:1fr; }   /* 사이드바에선 서버 카드 1열 */
+
+  /* 사용법 아코디언 (하단 전체폭) — 코드블록이 길어서 접어둠 */
+  details.guide{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin:26px 0 16px; overflow:hidden;
+  }
+  details.guide > summary{
+    cursor:pointer; list-style:none; padding:16px 20px; font-size:17px; font-weight:650;
+    display:flex; align-items:center; gap:11px;
+  }
+  details.guide > summary::-webkit-details-marker{ display:none; }
+  details.guide > summary .ico{
+    width:30px; height:30px; border-radius:9px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center; font-size:15px;
+    background:var(--green-soft); color:var(--green-deep);
+  }
+  details.guide > summary .chev{ margin-left:auto; color:var(--muted); font-size:13px; transition:transform .18s; }
+  details.guide[open] > summary .chev{ transform:rotate(180deg); }
+  details.guide .guide-body{ padding:16px 20px 18px; border-top:1px solid var(--line); }
+
+  @media (max-width:960px){
+    .wiki-grid{ grid-template-columns:1fr; }
+  }
   @media (max-width:560px){
     dl.spec{ grid-template-columns:74px 1fr; }
   }
@@ -208,13 +239,50 @@
       </div>
     </div>
 
-    <h2 class="section"><span class="ico">🖥️</span>서버별 환경 구성</h2>
-    <div class="servers" id="serverList">
-      <div class="loading">서버 환경을 불러오는 중…</div>
+    <div class="wiki-grid">
+      <!-- 좌(메인): 노하우 게시판 — 자주 보고 글 쓰는 주인공 -->
+      <div class="wiki-main">
+        <h2 class="section"><span class="ico">💡</span>노하우 · 팁 게시판</h2>
+        <div class="card">
+          <div class="board-tools">
+            <input type="text" id="searchInput" placeholder="제목·내용으로 검색… (예: sbatch, NFS, mpirun)" />
+            <button class="sort-toggle" id="sortToggle" data-sort="recent">최신순 ↕</button>
+            <button class="btn ghost" id="toggleWrite">＋ 글쓰기</button>
+          </div>
+
+          <div class="tag-filter" id="tagFilter"></div>
+
+          <form id="writeForm" autocomplete="off">
+            <input type="text" id="newTitle" placeholder="제목" />
+            <div class="row">
+              <input type="text" id="newAuthor" placeholder="작성자" />
+              <input type="text" id="newTags" placeholder="태그 (콤마 구분, 예: Slurm,스케줄러)" />
+            </div>
+            <textarea id="newBody" rows="3" placeholder="내용 / 노하우 요약"></textarea>
+            <div class="row">
+              <button type="submit" class="btn">등록</button>
+              <button type="button" class="btn ghost" id="cancelWrite">취소</button>
+            </div>
+          </form>
+
+          <ul class="posts" id="postList"></ul>
+          <div class="empty" id="emptyMsg" style="display:none;">검색 결과가 없습니다.</div>
+        </div>
+      </div>
+
+      <!-- 우(사이드): 서버별 환경 구성 — 참조용 -->
+      <aside class="wiki-side">
+        <h2 class="section"><span class="ico">🖥️</span>서버별 환경 구성</h2>
+        <div class="servers" id="serverList">
+          <div class="loading">서버 환경을 불러오는 중…</div>
+        </div>
+      </aside>
     </div>
 
-    <h2 class="section"><span class="ico">📘</span>클러스터 사용 방법</h2>
-    <div class="card">
+    <!-- 하단(전체폭): 클러스터 사용 방법 — 길어서 아코디언으로 접음 -->
+    <details class="guide">
+      <summary><span class="ico">📘</span>클러스터 사용 방법<span class="chev">▾</span></summary>
+      <div class="guide-body">
       <ol class="steps">
         <li>
           <h4>1) SSH로 로그인 노드 접속</h4>
@@ -258,34 +326,8 @@ Submitted batch job 184302</pre>
 <span class="pr">$</span> scancel 184302         <span class="cm"># 작업 취소</span></pre>
         </li>
       </ol>
-    </div>
-
-    <h2 class="section"><span class="ico">💡</span>노하우 · 팁 게시판</h2>
-    <div class="card">
-      <div class="board-tools">
-        <input type="text" id="searchInput" placeholder="제목·내용으로 검색… (예: sbatch, NFS, mpirun)" />
-        <button class="sort-toggle" id="sortToggle" data-sort="recent">최신순 ↕</button>
-        <button class="btn ghost" id="toggleWrite">＋ 글쓰기</button>
       </div>
-
-      <div class="tag-filter" id="tagFilter"></div>
-
-      <form id="writeForm" autocomplete="off">
-        <input type="text" id="newTitle" placeholder="제목" />
-        <div class="row">
-          <input type="text" id="newAuthor" placeholder="작성자" />
-          <input type="text" id="newTags" placeholder="태그 (콤마 구분, 예: Slurm,스케줄러)" />
-        </div>
-        <textarea id="newBody" rows="3" placeholder="내용 / 노하우 요약"></textarea>
-        <div class="row">
-          <button type="submit" class="btn">등록</button>
-          <button type="button" class="btn ghost" id="cancelWrite">취소</button>
-        </div>
-      </form>
-
-      <ul class="posts" id="postList"></ul>
-      <div class="empty" id="emptyMsg" style="display:none;">검색 결과가 없습니다.</div>
-    </div>
+    </details>
   </div>
 
 <script>
