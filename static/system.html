@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>시스템 상태 · 사내 HPC 포털</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  /* ── 공통 디자인 토큰 (DEV_BLUEPRINT §5) ── */
+  :root{
+    --bg:#f4f6fb; --paper:#ffffff; --ink:#172033; --muted:#64748b;
+    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a;
+    --green:#047857; --orange:#b45309; --red:#b91c1c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5;
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;}
+  a{text-decoration:none;}
+
+  /* 상단 네비 */
+  .nav{background:var(--navy);color:#fff;display:flex;align-items:center;
+    justify-content:space-between;padding:0 22px;height:60px;position:sticky;top:0;z-index:50;
+    box-shadow:0 2px 10px rgba(15,23,42,.18);}
+  .nav .brand{font-weight:700;font-size:17px;}
+  .nav .menu{display:flex;gap:6px;}
+  .nav .menu a{padding:8px 14px;border-radius:8px;color:#cbd5e1;font-size:14px;transition:.15s;}
+  .nav .menu a:hover{background:rgba(255,255,255,.1);color:#fff;}
+  .nav .menu a.active{background:var(--blue);color:#fff;font-weight:600;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 60px;}
+  .page-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .page-head h1{margin:0;font-size:24px;}
+  .updated{font-size:13px;color:var(--muted);}
+  .updated b{color:var(--ink);}
+
+  /* KPI 줄 */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:13px;
+    padding:15px 18px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
+  .kpi .label{font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .kpi .value{font-size:25px;font-weight:700;}
+  .kpi .value.green{color:var(--green);} .kpi .value.orange{color:var(--orange);}
+  .kpi .value.red{color:var(--red);}
+
+  .sec-title{font-size:16px;margin:0 0 12px;}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;flex-wrap:wrap;}
+  .sec-head h2{font-size:16px;margin:0;}
+
+  /* 추가기능: 위험 알림 배너 */
+  .alert{display:none;align-items:center;gap:10px;background:#fef2f2;border:1px solid var(--red);
+    color:#7f1d1d;border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:14px;}
+  .alert.show{display:flex;}
+  .alert .ic{font-size:18px;}
+  .alert b{color:var(--red);}
+
+  /* 추가기능: 위험만 보기 필터 */
+  .filters{display:flex;gap:6px;}
+  .filters button{border:1px solid var(--line);background:var(--paper);color:var(--muted);
+    padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;transition:.15s;
+    font-family:inherit;}
+  .filters button:hover{background:#f1f5f9;}
+  .filters button.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600;}
+
+  /* 추가기능: 온도 추이 차트 박스 */
+  .chart-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:18px;box-shadow:0 2px 8px rgba(15,23,42,.05);margin-bottom:24px;}
+  .chart-box h3{margin:0 0 12px;font-size:16px;}
+
+  .empty-filter{display:none;color:var(--muted);font-size:14px;padding:18px 4px;}
+
+  /* 노드 카드 그리드 */
+  .nodes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .node{background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:16px;box-shadow:0 2px 8px rgba(15,23,42,.05);transition:.2s;}
+  .node.red{border-color:var(--red);box-shadow:0 0 0 2px rgba(185,28,28,.12);}
+  .node .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .node .name{font-weight:700;font-size:15px;}
+
+  /* 상태 칩/배지 */
+  .chip{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:20px;color:#fff;display:inline-block;}
+  .chip.green{background:var(--green);} .chip.orange{background:var(--orange);} .chip.red{background:var(--red);}
+
+  /* 수치 메트릭(온도/GPU온도/메모리) — 게이지 바 */
+  .metric{margin-bottom:9px;}
+  .metric .ml{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:3px;}
+  .metric .ml b{color:var(--ink);font-weight:600;}
+  .bar{height:8px;background:#e8edf5;border-radius:6px;overflow:hidden;}
+  .bar>span{display:block;height:100%;border-radius:6px;transition:width .6s ease;}
+  .fill.green{background:var(--green);} .fill.orange{background:var(--orange);} .fill.red{background:var(--red);}
+
+  /* 상태 항목(디스크/NFS) — 칩 행 */
+  .states{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .state{flex:1;min-width:0;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center;}
+  .state .sl{font-size:11px;color:var(--muted);margin-bottom:4px;}
+
+  @media(max-width:1000px){.nodes{grid-template-columns:repeat(2,1fr);}.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.nodes{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">사내 HPC 포털</div>
+    <div class="menu">
+      <a href="index.html">홈</a>
+      <a href="monitoring.html">모니터링</a>
+      <a href="wiki.html">정보공유</a>
+      <a href="stats.html">사용량 통계</a>
+      <a href="system.html" class="active">시스템 상태</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="page-head">
+      <h1>시스템 상태 점검</h1>
+      <div class="updated">최근 갱신 <b id="upd">--:--</b> · 2.5초 자동</div>
+    </div>
+
+    <!-- 추가기능: 위험 알림 배너 -->
+    <div class="alert" id="alert">
+      <span class="ic">🚨</span>
+      <span><b>위험 노드</b> <span id="alert-list"></span> — 즉시 점검이 필요합니다.</span>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">정상 노드</div><div class="value green" id="kpi-ok">-</div></div>
+      <div class="kpi"><div class="label">주의 노드</div><div class="value orange" id="kpi-warn">-</div></div>
+      <div class="kpi"><div class="label">위험 노드</div><div class="value red" id="kpi-crit">-</div></div>
+      <div class="kpi"><div class="label">최고 CPU 온도</div><div class="value" id="kpi-temp">-</div></div>
+    </div>
+
+    <!-- 추가기능: 온도 추이 차트 -->
+    <div class="chart-box">
+      <h3>평균 온도 추이 (CPU · GPU)</h3>
+      <canvas id="trendChart" height="80"></canvas>
+    </div>
+
+    <!-- 추가기능: 위험만 보기 필터 -->
+    <div class="sec-head">
+      <h2>노드별 상태 (node01~08)</h2>
+      <div class="filters" id="filters">
+        <button data-f="all" class="active">전체</button>
+        <button data-f="warn">주의 이상</button>
+        <button data-f="crit">위험만</button>
+      </div>
+    </div>
+    <div class="nodes" id="grid"></div>
+    <div class="empty-filter" id="empty-filter">해당 등급의 노드가 없습니다. ✅</div>
+  </div>
+
+  <script>
+    // ── 임계 기준 (DEV_BLUEPRINT §1-A) — 서버와 동일 규칙 ──
+    const THRESH = { temp:[55,65], gpu_temp:[70,80], mem:[80,90] };
+    const LABEL  = { temp:"CPU 온도", gpu_temp:"GPU 온도", mem:"메모리" };
+    const UNIT   = { temp:"℃", gpu_temp:"℃", mem:"%" };
+    const RANK   = { green:0, orange:1, red:2 };
+    const GTXT   = { green:"정상", orange:"주의", red:"위험" };
+
+    const gradeNum  = (k,v)=>{ const[a,b]=THRESH[k]; return v>=b?"red":v>=a?"orange":"green"; };
+    const gradeDisk = s => s==="CRIT"?"red":s==="WARN"?"orange":"green";
+    const gradeNfs  = s => s==="DOWN"?"red":s==="DEGRADED"?"orange":"green";
+    const worst     = gs => gs.reduce((a,g)=>RANK[g]>RANK[a]?g:a,"green");
+
+    function metricRow(k,v){
+      const g = gradeNum(k,v);
+      const w = Math.max(0, Math.min(100, v));   // 온도도 0~100 스케일로 표시
+      return '<div class="metric">'+
+        '<div class="ml"><span>'+LABEL[k]+'</span><b>'+v+UNIT[k]+'</b></div>'+
+        '<div class="bar"><span class="fill '+g+'" style="width:'+w+'%"></span></div>'+
+      '</div>';
+    }
+    function stateBox(label,val,g){
+      return '<div class="state"><div class="sl">'+label+'</div>'+
+        '<span class="chip '+g+'">'+val+'</span></div>';
+    }
+    // 노드 종합 등급(롤업) — 카드/KPI/필터/배너가 공유
+    const overallOf = n => worst([gradeNum("temp",n.temp),gradeNum("gpu_temp",n.gpu_temp),
+                                  gradeNum("mem",n.mem),gradeDisk(n.disk_status),gradeNfs(n.nfs_status)]);
+
+    function nodeCard(n){
+      const ov = overallOf(n);
+      return '<div class="node '+(ov==="red"?"red":"")+'">'+
+        '<div class="top"><span class="name">'+n.node+'</span>'+
+          '<span class="chip '+ov+'">'+GTXT[ov]+'</span></div>'+
+        metricRow("temp",n.temp)+metricRow("gpu_temp",n.gpu_temp)+metricRow("mem",n.mem)+
+        '<div class="states">'+
+          stateBox("디스크",n.disk_status,gradeDisk(n.disk_status))+
+          stateBox("NFS",n.nfs_status,gradeNfs(n.nfs_status))+
+        '</div>'+
+      '</div>';
+    }
+
+    function renderKpi(rows){
+      let ok=0,warn=0,crit=0,maxTemp=-1,maxNode="-";
+      rows.forEach(n=>{
+        const ov=overallOf(n);
+        if(ov==="red")crit++; else if(ov==="orange")warn++; else ok++;
+        if(n.temp>maxTemp){maxTemp=n.temp;maxNode=n.node;}
+      });
+      document.getElementById("kpi-ok").textContent   = ok;
+      document.getElementById("kpi-warn").textContent = warn;
+      document.getElementById("kpi-crit").textContent = crit;
+      const tEl=document.getElementById("kpi-temp");
+      tEl.textContent = maxTemp+"℃ ("+maxNode+")";
+      tEl.className = "value "+gradeNum("temp",maxTemp);
+    }
+
+    // 추가기능 ①-a: 위험 알림 배너
+    function renderAlert(rows){
+      const reds = rows.filter(n=>overallOf(n)==="red").map(n=>n.node);
+      const al = document.getElementById("alert");
+      if(reds.length){
+        document.getElementById("alert-list").textContent = reds.join(", ");
+        al.classList.add("show");
+      }else{ al.classList.remove("show"); }
+    }
+
+    // 추가기능 ①-b: 위험만 보기 필터
+    let filterMode = "all";   // all | warn | crit
+    const PASS = { all:()=>true, warn:ov=>ov!=="green", crit:ov=>ov==="red" };
+    function renderGrid(rows){
+      const shown = rows.filter(n=>PASS[filterMode](overallOf(n)));
+      document.getElementById("grid").innerHTML = shown.map(nodeCard).join("");
+      document.getElementById("empty-filter").style.display = shown.length ? "none" : "block";
+    }
+    document.getElementById("filters").addEventListener("click", e=>{
+      const b = e.target.closest("button"); if(!b) return;
+      filterMode = b.dataset.f;
+      document.querySelectorAll("#filters button").forEach(x=>x.classList.toggle("active", x===b));
+      if(lastRows) renderGrid(lastRows);
+    });
+
+    // 추가기능 ②: 평균 온도 추이 차트
+    let trendChart = null;
+    function makeTrend(ctx,labels,cpu,gpu){
+      return new Chart(ctx,{ type:"line",
+        data:{ labels, datasets:[
+          { label:"평균 CPU 온도", data:cpu, borderColor:"#1d4ed8",
+            backgroundColor:"rgba(29,78,216,.10)", fill:true, tension:.3, pointRadius:0 },
+          { label:"평균 GPU 온도", data:gpu, borderColor:"#b45309",
+            backgroundColor:"rgba(180,83,9,.08)", fill:true, tension:.3, pointRadius:0 }
+        ]},
+        options:{ responsive:true, plugins:{ legend:{ display:true, position:"bottom" } },
+          scales:{ y:{ ticks:{ callback:v=>v+"℃" } } } }
+      });
+    }
+    async function loadTrend(){
+      try{
+        const d = await (await fetch("/api/system/history?points=40")).json();
+        const labels = d.labels.map(t=>t.slice(11,16));   // ISO → HH:MM
+        if(!trendChart){
+          trendChart = makeTrend(document.getElementById("trendChart"), labels, d.cpu_avg, d.gpu_avg);
+        }else{
+          trendChart.data.labels = labels;
+          trendChart.data.datasets[0].data = d.cpu_avg;
+          trendChart.data.datasets[1].data = d.gpu_avg;
+          trendChart.update("none");
+        }
+      }catch(e){}
+    }
+
+    let lastRows = null;
+    async function load(){
+      try{
+        const rows = await (await fetch("/api/system/health")).json();
+        lastRows = rows;
+        renderGrid(rows);
+        renderKpi(rows);
+        renderAlert(rows);
+        document.getElementById("upd").textContent = new Date().toTimeString().slice(0,5);
+      }catch(e){ /* 서버 미연결 시 조용히 다음 폴링 대기 */ }
+    }
+    load();  loadTrend();
+    setInterval(load, 2500);       // 상태 폴링 (DEV_BLUEPRINT §2)
+    setInterval(loadTrend, 20000); // 추이는 20초마다(서버 기록 간격과 동일)
+  </script>
+
+  <!-- 실시간 채팅 위젯(팀원1 소유) — 한 줄 로드만 -->
+  <script src="/static/chat-widget.js"></script>
+</body>
+</html>
