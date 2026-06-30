@@ -22,6 +22,13 @@ def test_system_health_schema_and_history():
         assert {"labels", "avg", "max"} <= set(h)
         assert len(h["labels"]) == len(h["avg"]) == len(h["max"])
 
+        # 노드별 네트워크 상태(확장) — node01..08, 스키마 정합
+        r = client.get("/api/system/network")
+        assert r.status_code == 200
+        net = r.json()
+        assert len(net) == 8
+        assert set(net[0]) == {"node", "rx_mbps", "tx_mbps", "latency_ms", "link_up", "updated_at"}
+
 
 def test_stats_usage_core_and_extensions():
     with TestClient(main.app) as client:
@@ -31,7 +38,16 @@ def test_stats_usage_core_and_extensions():
         # SPEC 핵심 키
         assert {"by_node", "by_user", "trend"} <= set(u)
         assert all(set(x) == {"node", "gpu_hours"} for x in u["by_node"])
-        # 확장(FR-S3)
-        assert {"summary", "stacked"} <= set(u)
+        assert "summary" in u
         assert {"total", "avgPerDay", "activeUsers", "activeNodes"} <= set(u["summary"])
-        assert "nodes" in u["stacked"] and "series" in u["stacked"]
+        assert len(u["trend"]) >= 7   # 추이 1주일 이전부터
+
+        # 용량 체크(기준 시점별 누적)
+        r = client.get("/api/stats/capacity")
+        assert r.status_code == 200
+        cap = r.json()["references"]
+        assert {ref["key"] for ref in cap} == {"w1", "d3", "today", "now"}
+        for ref in cap:
+            assert {"key", "label", "cutoff", "users"} <= set(ref)
+        tot = {ref["key"]: sum(x["gpu_hours"] for x in ref["users"]) for ref in cap}
+        assert tot["now"] >= tot["w1"]   # 누적은 현재가 1주일전 이상

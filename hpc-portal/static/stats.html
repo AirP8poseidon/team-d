@@ -16,6 +16,16 @@
     .chart-box h3{margin:0 0 10px;font-size:1rem;}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     @media(max-width:880px){.grid2{grid-template-columns:1fr;}}
+
+    /* 사용자별 용량 체크 — 기준 시점 버튼 */
+    .cap-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+    .cap-head h3{margin:0;}
+    .cap-btns{display:flex;gap:6px;}
+    .cap-btns button{border:1px solid var(--line);background:var(--paper);color:var(--muted);
+      padding:6px 12px;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:inherit;}
+    .cap-btns button:hover{background:#f1f5f9;}
+    .cap-btns button.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600;}
+    .cap-sub{color:var(--muted);font-size:.8rem;margin:0 0 10px;}
   </style>
 </head>
 <body>
@@ -23,7 +33,7 @@
 
   <div class="container">
     <h1>사용량 통계</h1>
-    <p class="subtitle">노드별/사용자별 GPU-hours 집계 · 추이 · 구성.</p>
+    <p class="subtitle">노드별/사용자별 GPU-hours 집계 · 추이 · 용량 체크.</p>
 
     <div class="kpi-row">
       <div class="kpi"><div class="label">총 GPU-hours</div><div class="value blue" id="kpi-total">-</div></div>
@@ -35,7 +45,7 @@
     </div>
 
     <div class="chart-box">
-      <h3>일자별 GPU 사용량 추이</h3>
+      <h3>일자별 GPU 사용량 추이 (최근 1주일)</h3>
       <canvas id="trendChart" height="90"></canvas>
     </div>
 
@@ -43,16 +53,25 @@
       <div class="chart-box"><h3>노드별 GPU-hours</h3><canvas id="nodeChart" height="150"></canvas></div>
       <div class="chart-box"><h3>사용자별 사용량 순위</h3><canvas id="userChart" height="150"></canvas></div>
     </div>
-    <div class="grid2">
-      <div class="chart-box"><h3>사용자 사용량 비중</h3><canvas id="shareChart" height="150"></canvas></div>
-      <div class="chart-box"><h3>노드별 사용자 구성</h3><canvas id="stackChart" height="150"></canvas></div>
+
+    <div class="chart-box">
+      <div class="cap-head">
+        <h3>사용자별 용량 체크</h3>
+        <div class="cap-btns" id="cap-btns">
+          <button data-k="w1">1주일전</button>
+          <button data-k="d3">3일전</button>
+          <button data-k="today" class="active">오늘 00시</button>
+          <button data-k="now">현재시각</button>
+        </div>
+      </div>
+      <p class="cap-sub" id="cap-sub"></p>
+      <canvas id="capChart" height="110"></canvas>
     </div>
   </div>
 
   <script>
     const C={blue:"#1d4ed8",green:"#047857",orange:"#b45309"};
-    const PAL=["#1d4ed8","#047857","#b45309","#7c3aed","#0891b2","#be123c","#15803d","#a16207"];
-    let nodeChart=null,userChart=null,trendChart=null,shareChart=null,stackChart=null;
+    let nodeChart=null,userChart=null,trendChart=null,capChart=null;
 
     function makeBar(ctx,labels,data,color,horizontal){
       return new Chart(ctx,{type:"bar",
@@ -65,19 +84,10 @@
         data:{labels,datasets:[{label:"GPU-hours",data,borderColor:C.blue,backgroundColor:"rgba(29,78,216,.12)",fill:true,tension:.3,pointRadius:3}]},
         options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
     }
-    function makeDoughnut(ctx,labels,data){
-      return new Chart(ctx,{type:"doughnut",
-        data:{labels,datasets:[{data,backgroundColor:PAL,borderColor:"#fff",borderWidth:2}]},
-        options:{responsive:true,plugins:{legend:{position:"right"}}}});
-    }
-    function makeStacked(ctx,nodes,series){
-      return new Chart(ctx,{type:"bar",
-        data:{labels:nodes,datasets:series.map((s,i)=>({label:s.user,data:s.data,backgroundColor:PAL[i%PAL.length]}))},
-        options:{responsive:true,plugins:{legend:{position:"bottom"}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}}});
-    }
     const setText=(id,v)=>{document.getElementById(id).textContent=v;};
 
-    async function load(){
+    // ── 사용량 집계(추이·노드·사용자·KPI) ──
+    async function loadUsage(){
       let d; try{ d=await (await fetch("/api/stats/usage")).json(); }catch(e){ return; }
       const s=d.summary||{};
       setText("kpi-total",Number(s.total??0).toFixed(1));
@@ -90,26 +100,42 @@
       const nL=d.by_node.map(x=>x.node), nD=d.by_node.map(x=>x.gpu_hours);
       const uL=d.by_user.map(x=>x.user), uD=d.by_user.map(x=>x.gpu_hours);
       const tL=d.trend.map(x=>x.day.slice(5)), tD=d.trend.map(x=>x.gpu_hours);
-      const stk=d.stacked||{nodes:[],series:[]};
-
       if(!nodeChart){
         nodeChart=makeBar(document.getElementById("nodeChart"),nL,nD,C.green,false);
         userChart=makeBar(document.getElementById("userChart"),uL,uD,C.orange,true);
         trendChart=makeLine(document.getElementById("trendChart"),tL,tD);
-        shareChart=makeDoughnut(document.getElementById("shareChart"),uL,uD);
-        stackChart=makeStacked(document.getElementById("stackChart"),stk.nodes,stk.series);
       }else{
         nodeChart.data.labels=nL; nodeChart.data.datasets[0].data=nD; nodeChart.update("none");
         userChart.data.labels=uL; userChart.data.datasets[0].data=uD; userChart.update("none");
         trendChart.data.labels=tL; trendChart.data.datasets[0].data=tD; trendChart.update("none");
-        shareChart.data.labels=uL; shareChart.data.datasets[0].data=uD; shareChart.update("none");
-        stackChart.data.labels=stk.nodes;
-        stackChart.data.datasets=stk.series.map((x,i)=>({label:x.user,data:x.data,backgroundColor:PAL[i%PAL.length]}));
-        stackChart.update("none");
       }
     }
-    load();
-    setInterval(load,30000);
+
+    // ── 사용자별 용량 체크(기준 시점 버튼) ──
+    let capData={}, curCap="today";
+    function renderCap(k){
+      const ref=capData[k]; if(!ref) return;
+      const labels=ref.users.map(u=>u.user), data=ref.users.map(u=>u.gpu_hours);
+      document.getElementById("cap-sub").textContent="기준: "+ref.label+" — "+ref.cutoff+" 까지 누적 GPU-hours";
+      if(!capChart) capChart=makeBar(document.getElementById("capChart"),labels,data,C.blue,false);
+      else{ capChart.data.labels=labels; capChart.data.datasets[0].data=data; capChart.update("none"); }
+    }
+    async function loadCap(){
+      try{ const d=await (await fetch("/api/stats/capacity")).json();
+        capData={}; (d.references||[]).forEach(r=>capData[r.key]=r);
+        renderCap(curCap);
+      }catch(e){}
+    }
+    document.getElementById("cap-btns").addEventListener("click",e=>{
+      const b=e.target.closest("button"); if(!b)return;
+      curCap=b.dataset.k;
+      document.querySelectorAll("#cap-btns button").forEach(x=>x.classList.toggle("active",x===b));
+      renderCap(curCap);
+    });
+
+    loadUsage(); loadCap();
+    setInterval(loadUsage,30000);
+    setInterval(loadCap,30000);
   </script>
 
   <script src="/static/include.js"></script>

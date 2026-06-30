@@ -83,6 +83,13 @@
     </div>
 
     <div class="sec-head">
+      <h2>시스템 네트워크 상태 (노드별)</h2>
+      <div class="updated">1GbE 기준 · 수신/송신 Mbps · 2.5초 자동</div>
+    </div>
+    <div class="nodes" id="net-grid"></div>
+    <div style="height:22px"></div>
+
+    <div class="sec-head">
       <h2>노드별 상태 (node01~08)</h2>
       <div class="filters" id="filters">
         <button data-f="all" class="active">전체</button>
@@ -168,6 +175,39 @@
         else{ trendChart.data.labels=labels; trendChart.data.datasets[0].data=d.avg; trendChart.data.datasets[1].data=d.max; trendChart.update("none"); }
       }catch(e){}
     }
+    // ── 노드별 네트워크 상태 (확장) ──
+    function netGrade(n){
+      if(!n.link_up) return "red";
+      const util = Math.max(n.rx_mbps, n.tx_mbps) / 10;   // % of 1000Mbps(1GbE)
+      if(util >= 90 || n.latency_ms >= 20) return "red";
+      if(util >= 70 || n.latency_ms >= 10) return "orange";
+      return "green";
+    }
+    function netLabel(n){
+      if(!n.link_up) return "단절";
+      const g = netGrade(n);
+      return g==="red" ? "포화" : g==="orange" ? "혼잡" : "정상";
+    }
+    function netCard(n){
+      const g = netGrade(n);
+      const util = n.link_up ? Math.round(Math.max(n.rx_mbps, n.tx_mbps) / 10) : 0;
+      return '<div class="node '+(g==="red"?"red":"")+'">'+
+        '<div class="top"><span class="name">'+n.node+'</span><span class="chip '+g+'">'+netLabel(n)+'</span></div>'+
+        '<div class="metric"><div class="ml"><span>대역폭 사용률</span><b>'+util+'%</b></div>'+
+          '<div class="bar"><span class="fill '+g+'" style="width:'+util+'%"></span></div></div>'+
+        '<div class="states">'+
+          '<div class="state"><div class="sl">수신</div><b>'+(n.link_up?n.rx_mbps+'M':'–')+'</b></div>'+
+          '<div class="state"><div class="sl">송신</div><b>'+(n.link_up?n.tx_mbps+'M':'–')+'</b></div>'+
+          '<div class="state"><div class="sl">지연</div><b>'+(n.link_up?n.latency_ms+'ms':'–')+'</b></div>'+
+        '</div>'+
+      '</div>';
+    }
+    async function loadNet(){
+      try{ const rows=await (await fetch("/api/system/network")).json();
+        document.getElementById("net-grid").innerHTML=rows.map(netCard).join("");
+      }catch(e){}
+    }
+
     let lastRows=null;
     async function load(){
       try{ const rows=await (await fetch("/api/system/health")).json();
@@ -175,8 +215,9 @@
         document.getElementById("upd").textContent=new Date().toTimeString().slice(0,5);
       }catch(e){}
     }
-    load(); loadTrend();
+    load(); loadTrend(); loadNet();
     setInterval(load,2500);
+    setInterval(loadNet,2500);
     setInterval(loadTrend,20000);
   </script>
 

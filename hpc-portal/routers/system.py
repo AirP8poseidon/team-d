@@ -68,6 +68,45 @@ def _maybe_record(db, gap_sec=20):
     db.commit()
 
 
+# ── 확장: 노드별 네트워크 상태(node_net) — 라우터 자기완결(db.py 미수정) ──
+# 1GbE(1000Mbps) 가정. rx/tx Mbps · 지연 ms · 링크 up/down. 색상 판정은 화면이 처리.
+_NET_SEED = [
+    # node,   rx,  tx,  latency_ms, link_up
+    ("node01", 320, 210, 2, 1),
+    ("node02", 910, 680, 8, 1),   # 사용률 91% → 위험(포화)
+    ("node03", 540, 300, 5, 1),
+    ("node04", 120, 90, 2, 1),
+    ("node05", 760, 720, 12, 1),  # 사용률 76% · 지연 12 → 주의(혼잡)
+    ("node06", 0, 0, 0, 0),       # 링크 단절 → 위험
+    ("node07", 430, 380, 4, 1),
+    ("node08", 180, 140, 3, 1),
+]
+
+
+def _ensure_net(db):
+    db.execute(
+        "CREATE TABLE IF NOT EXISTS node_net("
+        "node TEXT PRIMARY KEY, rx_mbps INTEGER NOT NULL, tx_mbps INTEGER NOT NULL, "
+        "latency_ms INTEGER NOT NULL, link_up INTEGER NOT NULL, updated_at TEXT NOT NULL)"
+    )
+    db.commit()
+
+
+def _seed_net_if_empty(db):
+    """2A 멱등: 비었을 때만 노드별 네트워크 상태 시드."""
+    _ensure_net(db)
+    if db.execute("SELECT COUNT(*) AS c FROM node_net").fetchone()["c"] > 0:
+        return
+    now = datetime.now().isoformat(timespec="seconds")
+    for node, rx, tx, lat, up in _NET_SEED:
+        db.execute(
+            "INSERT INTO node_net(node, rx_mbps, tx_mbps, latency_ms, link_up, updated_at) "
+            "VALUES(?,?,?,?,?,?)",
+            (node, rx, tx, lat, up, now),
+        )
+    db.commit()
+
+
 @router.get("/health")
 def get_health(db=Depends(db_dep)):
     """노드별 온도·디스크·NFS 상태 (node01..08). SPEC §7.4 스키마."""
@@ -94,3 +133,24 @@ def get_history(points: int = 40, db=Depends(db_dep)):
         "avg": [r["avg"] for r in rows],
         "max": [r["max"] for r in rows],
     }
+
+
+@router.get("/network")
+def get_network(live: bool = True, db=Depends(db_dep)):
+    """노드별 네트워크 상태(확장): 수신·송신 처리량(Mbps)·지연(ms)·링크 up/down (node01..08).
+
+    live=True: 폴링 시 살아있는 느낌을 위해 rx/tx에 소폭 변동(저장 안 함, 표시용). 링크 단절은 0 고정.
+    1GbE(1000Mbps) 기준 사용률·임계 색상은 화면(system.html)이 처리.
+    """
+    _seed_net_if_empty(db)
+    out = []
+    for r in db.execute(
+        "SELECT node, rx_mbps, tx_mbps, latency_ms, link_up, updated_at "
+        "FROM node_net ORDER BY node"
+    ).fetchall():
+        d = dict(r)
+        if live and d["link_up"]:
+            d["rx_mbps"] = max(0, min(1000, d["rx_mbps"] + random.randint(-20, 20)))
+            d["tx_mbps"] = max(0, min(1000, d["tx_mbps"] + random.randint(-20, 20)))
+        out.append(d)
+    return out
