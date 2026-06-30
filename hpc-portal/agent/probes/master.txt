@@ -1,5 +1,6 @@
+Warning: Permanently added 'master,10.10.10.100' (ECDSA) to the list of known hosts.
 ############ HPC SERVER PROBE ############
-probe_time: 2026-06-30 17:45:39
+probe_time: 2026-06-30 18:47:22
 
 === 1) 호스트/OS ===
 hostname    : master
@@ -8,7 +9,7 @@ uname       : Linux master 3.10.0-1160.el7.x86_64 #1 SMP Tue Aug 18 14:50:17 EDT
 os          : Red Hat Enterprise Linux Server 7.9 (Maipo)
 
 === 2) Python (에이전트 실행 요건) ===
-python3 : no  hpc-portal/agent/probe_server.sh: line 24: python3: command not found
+python3 : no  /home/gonas/appl/probe/team-d/hpc-portal/agent/probe_server.sh: line 24: python3: command not found
 python  : yes   Python 2.7.5
 
 === 3) CPU / 메모리 ===
@@ -17,8 +18,8 @@ cpu model   : AMD EPYC 7543 32-Core Processor
 /proc/stat  : readable
 /proc/meminfo:
     MemTotal:       263758668 kB
-    MemFree:         5118596 kB
-    MemAvailable:   234729384 kB
+    MemFree:          954764 kB
+    MemAvailable:   236688928 kB
 free 명령   : yes
 
 === 4) GPU (가장 중요 — 제원 좌우) ===
@@ -29,7 +30,7 @@ sensors(CPU온도): yes
 === 5) 디스크 / NFS ===
 df -P / :
     Filesystem     1024-blocks      Used Available Capacity Mounted on
-    /dev/sda4        400488388 297666316 102822072      75% /
+    /dev/sda4        400488388 297666488 102821900      75% /
 nfs 마운트:
     nfsd on /proc/fs/nfsd type nfsd (rw,relatime)
     192.168.2.74:/volume1/data on /home/nas_74 type nfs4 (rw,relatime,vers=4.1,rsize=131072,wsize=131072,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,clientaddr=192.168.2.83,local_lock=none,addr=192.168.2.74)
@@ -49,9 +50,9 @@ ps -eo 지원: yes
     %CPU USER     COMMAND
     99.9 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
     99.9 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
-    99.9 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
-    99.9 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
-    99.9 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
+    99.2 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
+    99.1 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
+    99.1 gonas    python ./02_make_schism_series_v2.py case_dense/oper_case12 case_dense/oper_case12/outputs_20260601 --nworkers 10
 
 === 8) 포털 호스트 접속 가능? (이 노드 → 워크스테이션 10.10.9.101:22) ===
   nc: 10.10.9.101:22 연결 불가 ❌ (같은 망/VPN/방화벽 확인)
