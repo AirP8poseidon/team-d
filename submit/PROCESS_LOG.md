@@ -215,6 +215,19 @@
 
 ---
 
+### [#18] 실서버 → 포털 엔드투엔드 가동 — 라이브 14노드 수집·표시 검증
+- 작성자(팀원): LeeSeongHoo (팀장)
+- 목표: master 1회성 순회 수집 → 이 PC scp → 포털 `COLLECTOR=ingest` 적재 → API 응답까지 전 구간을 실데이터로 가동·검증(망격리 git릴레이 없이 직접연동).
+- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
+  > "계속 진행"
+  > (토폴로지) "원격서버 마스터에서만 각 노드들 정보 수집하고, 마스터랑 여기랑만 통신"
+  > "원격서버 부하가 최소한으로 걸리도록 주의해서 작업할것."
+- 사용한 기법: (b) 외부 서버 직접 연동(SSH 순회 + scp), (c) 재사용 산출물(scan_once.sh·ingest 컬렉터)
+- 결과: `scan_once.sh` master 1회 실행 → **14/14 성공**(master+node1~13) → `data/incoming/*.json` 14개를 이 PC로 scp. 포털을 in-process(TestClient, COLLECTOR=ingest, HPC_NODES=master,node1~13, 임시DB)로 가동 → lifespan startup이 ingest로 nodes=14·jobs=30·health=14 적재, `/api/monitoring/nodes`·`/jobs`·`/api/system/health` 200 OK. **라이브 결과**: node1·2·3 pschism(gonas), node5·7·8 padcirc(smjeong), node9 nemo(gonas), node10 Intel-MPI(hcpark), node11 swan(hcpark), node4·6·12·13 idle. "누가·어느 노드·무슨 예보모델"이 그대로 노출 — 포털 핵심가치 실증.
+- 막힘 → 해결: ① venv에 fastapi 미설치 → `pip install -r requirements.txt`(fastapi 0.138.2). ② 노드명이 master/node1~13이라 기본 db.NODES(node01~08)면 ingest가 전부 reject → `HPC_NODES` 주입으로 수용. ③ 잔여 이슈: 전 노드 temp=0(EPYC sensors 포맷 불일치), MPI 작업이 노드당 3행(상위 CPU 3개)으로 중복 표시 → 모니터링 UI reframe에서 집계·정리 예정.
+
+---
+
 ## 마무리 요약 (1~2줄)
 - 가장 효과적이었던 에이전트 활용법: **인터뷰로 모호한 의도를 청사진 1문서로 수렴** → 그 문서에서 팀원별 핸드오버·킥오프 프롬프트를 파생해 충돌 0으로 병렬 착수.
 - 다른 팀이 그대로 따라 하려면 필요한 것: `DEV_BLUEPRINT.md` 양식(역할·소유파일·DB·API·통합 접점·킥오프 프롬프트) + "공통 파일은 한 명만 수정" 규칙.
