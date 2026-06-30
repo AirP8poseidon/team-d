@@ -82,8 +82,24 @@ def nfs_status():
 
 
 def temp_c():
-    m = re.search(r"(?:Tctl|Tdie|Package id 0|Core 0)[^+]*\+([0-9]+)", _sh(["sensors"]))
-    return int(m.group(1)) if m else 0
+    """노드 온도(℃). CPU 계열 센서(Tctl/Tdie/Tccd/Package/Core) 우선,
+    없으면 sensors 가 노출하는 실센서 온도 중 최댓값(예: NIC loc1). 임계값(high/crit) 제외.
+
+    이 클러스터(EPYC)는 k10temp(CPU 코어 온도)가 안 올라와 loc1(NIC ~45℃)만 보인다 →
+    CPU 코어 온도 부재 시 그 실측 온도라도 보고(0 더미보다 정확)."""
+    out = _sh(["sensors"])
+    _cpu = ("Tctl", "Tdie", "Tccd", "Package id 0", "Core 0")
+    fallback = 0
+    for ln in out.splitlines():
+        head = ln.split("(")[0]          # (high=.., crit=..) 임계값 제거
+        m = re.search(r"\+([0-9]+(?:\.[0-9]+)?)", head)
+        if not m:
+            continue
+        val = int(float(m.group(1)))
+        if any(lbl in head for lbl in _cpu):
+            return val                   # CPU 계열 온도가 있으면 그것을 우선
+        fallback = max(fallback, val)    # 그 외 실센서(NIC 등) 중 최댓값
+    return fallback
 
 
 # 시스템 계정 — "현재 작업"에서 제외
