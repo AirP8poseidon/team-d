@@ -25,24 +25,27 @@
   .sec-title{font-size:19px;font-weight:700;margin:30px 0 14px;}
   .nodes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   .node{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
-  .node .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .node.is-run{border-left:3px solid var(--green);}
+  .node.is-idle{opacity:.85;}
+  .node .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .node .name{font-weight:700;font-size:15px;}
   .badge{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;color:#fff;}
   .badge.run{background:var(--green);}
   .badge.idle{background:var(--muted);}
   .badge.maint{background:var(--orange);}
-  .gpu-tag{font-size:12px;color:var(--muted);margin-bottom:10px;}
   .metric{margin-bottom:8px;}
   .metric .ml{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:3px;}
   .bar{height:8px;background:#e8edf5;border-radius:6px;overflow:hidden;}
   .bar > span{display:block;height:100%;border-radius:6px;transition:width .6s ease;}
   .fill-cpu{background:var(--blue);}
-  .fill-gpu{background:var(--green);}
   .fill-mem{background:var(--orange);}
-  /* 현재 작업 맥락 (결정 3A) */
+  /* 현재 작업(실행 중인 예보모델) 맥락 — Job 테이블의 노드별 요약 (결정 3A) */
   .node-ctx{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);font-size:12px;color:var(--ink);}
+  .node-ctx + .node-ctx{margin-top:4px;padding-top:0;border-top:none;}
   .node-ctx.empty{color:var(--muted);}
+  .node-ctx .model{color:var(--blue);font-weight:700;}
   .node-ctx .src{color:var(--muted);}
+  .node-ctx .manual{color:var(--green);font-weight:700;}
   /* 작업 맥락 등록 폼 (FR-M5/M7) */
   .reg-panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px rgba(15,23,42,.05);margin-bottom:18px;}
   .reg-panel h3{margin:0 0 4px;font-size:16px;}
@@ -63,11 +66,15 @@
   tbody td{padding:10px 14px;border-bottom:1px solid #eef1f6;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:#f8fafc;}
+  td .model{font-weight:700;color:var(--navy);}
+  td .cmd{display:block;font-size:11.5px;color:var(--muted);max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ranks{font-size:11.5px;font-weight:700;color:var(--blue);background:#eaf0ff;padding:2px 8px;border-radius:20px;}
   .st{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;color:#fff;}
   .st.run{background:var(--green);}
   .st.wait{background:var(--orange);}
   .chart-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
   .chart-box h3{margin:0 0 12px;font-size:16px;}
+  .empty-row td{color:var(--muted);text-align:center;padding:18px;}
   @media(max-width:1000px){.nodes{grid-template-columns:repeat(2,1fr);}.kpi-row{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:560px){.nodes{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr;}}
   .scroll-x{overflow-x:auto;}
@@ -86,29 +93,26 @@
     <div class="kpi-row">
       <div class="kpi"><div class="label">전체 노드</div><div class="value" id="kpi-total">--</div></div>
       <div class="kpi"><div class="label">가동 / 유휴 / 점검</div><div class="value green"><span id="kpi-run">-</span> <span style="color:var(--muted)">/</span> <span style="color:var(--muted)" id="kpi-idle">-</span> <span style="color:var(--muted)">/</span> <span style="color:var(--orange)" id="kpi-maint">-</span></div></div>
-      <div class="kpi"><div class="label">대기 / 실행 Job</div><div class="value blue"><span id="kpi-wait">-</span> <span style="color:var(--muted)">/</span> <span style="color:var(--green)" id="kpi-jrun">-</span></div></div>
-      <div class="kpi"><div class="label">평균 CPU / GPU / MEM</div><div class="value orange"><span id="kpi-cpu">-</span>% <span style="color:var(--green);font-size:18px">G <span id="kpi-gpu">-</span>%</span> <span style="color:var(--orange);font-size:18px">M <span id="kpi-mem">-</span>%</span></div></div>
+      <div class="kpi"><div class="label">실행 중 모델작업</div><div class="value blue" id="kpi-jobs">-</div></div>
+      <div class="kpi"><div class="label">평균 CPU / MEM <span style="font-weight:400;color:var(--muted)">(가동 노드)</span></div><div class="value orange"><span style="color:var(--blue)">C <span id="kpi-cpu">-</span>%</span> <span style="color:var(--orange)">M <span id="kpi-mem">-</span>%</span></div></div>
     </div>
 
     <h2 class="sec-title">작업 맥락 등록</h2>
     <div class="reg-panel">
       <h3>현재 작업 맥락 등록</h3>
-      <p class="hint">스케줄러 큐에 안 잡히는 <code>mpirun</code> 직접 실행 등도 여기서 등록하면 노드 카드에 즉시 표시됩니다. (FR-M5/M7)</p>
+      <p class="hint">스케줄러(PBS) 큐에 안 잡히는 <code>mpirun</code>/직접 실행 작업도 여기서 등록하면 노드 카드에 즉시 표시됩니다. (FR-M5/M7) — 실행 중 모델은 자동 수집되어 이미 카드에 표시됩니다.</p>
       <form class="reg-form" id="reg-form">
         <div class="reg-field">
           <label for="reg-node">노드</label>
-          <select id="reg-node">
-            <option>node01</option><option>node02</option><option>node03</option><option>node04</option>
-            <option>node05</option><option>node06</option><option>node07</option><option>node08</option>
-          </select>
+          <select id="reg-node"><!-- 노드 목록은 실데이터에서 동적 채움 --></select>
         </div>
         <div class="reg-field">
           <label for="reg-user">사용자</label>
-          <input id="reg-user" type="text" placeholder="예: 김지훈" autocomplete="off" />
+          <input id="reg-user" type="text" placeholder="예: gonas" autocomplete="off" />
         </div>
         <div class="reg-field">
           <label for="reg-purpose">작업 목적</label>
-          <input id="reg-purpose" type="text" placeholder="예: 딥러닝 모델 학습" autocomplete="off" />
+          <input id="reg-purpose" type="text" placeholder="예: pschism 폭풍해일 예보" autocomplete="off" />
         </div>
         <div class="reg-field">
           <label for="reg-eta">예상 종료(ETA)</label>
@@ -119,7 +123,6 @@
           <select id="reg-source">
             <option value="manual" selected>manual</option>
             <option value="mpirun">mpirun</option>
-            <option value="slurm">slurm</option>
             <option value="pbs">pbs</option>
           </select>
         </div>
@@ -131,18 +134,18 @@
     <h2 class="sec-title">노드 상태</h2>
     <div class="nodes" id="node-grid"></div>
 
-    <h2 class="sec-title">노드별 GPU 사용률</h2>
+    <h2 class="sec-title">노드별 CPU 사용률</h2>
     <div class="chart-box">
-      <h3>실시간 GPU 사용률 (%)</h3>
-      <canvas id="gpuChart" height="110"></canvas>
+      <h3>실시간 CPU 사용률 (%)</h3>
+      <canvas id="cpuChart" height="110"></canvas>
     </div>
 
-    <h2 class="sec-title">작업(Job) 큐</h2>
+    <h2 class="sec-title">실행 중 작업(모델) — 누가 · 어느 노드 · 무슨 모델</h2>
     <div class="panel scroll-x">
       <table>
         <thead>
           <tr>
-            <th>JobID</th><th>사용자</th><th>노드</th><th>작업 목적</th><th>상태</th><th>경과시간</th>
+            <th>노드</th><th>사용자</th><th>모델 / 실행 명령</th><th>프로세스</th><th>상태</th>
           </tr>
         </thead>
         <tbody id="job-body"></tbody>
@@ -157,7 +160,6 @@
     "use strict";
 
     // ── 상태 정규화 (실제 API 값 기준) ──────────────────────────────────────
-    // sinfo 샘플 값: alloc, idle  (maint/down/drain 등은 향후 대비해 매핑)
     var NODE_ST = {
       alloc:"run", allocated:"run", running:"run", mix:"run", mixed:"run",
       idle:"idle",
@@ -168,12 +170,10 @@
     function normNodeStatus(s){
       return NODE_ST[String(s||"").toLowerCase().trim()] || "idle";
     }
-    // squeue 샘플 값: RUNNING, PENDING
     function normJobStatus(s){
       var k = String(s||"").toUpperCase().trim();
-      if (k === "RUNNING") return "run";
-      if (k === "PENDING") return "wait";
-      return "wait";
+      if (k === "PENDING" || k === "WAIT" || k === "QUEUED") return "wait";
+      return "run";
     }
     var JOB_LABEL = { run:"실행중", wait:"대기" };
 
@@ -185,56 +185,122 @@
     }
     function setText(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; }
 
+    // 실행 명령에서 친숙한 모델명 추출 (해양·폭풍해일·파랑 예보 모델 + 일반)
+    var KNOWN_MODELS = ["pschism","schism","padcirc","adcirc","nemo","swan","wrf","roms","ww3"];
+    function modelName(purpose){
+      var p = String(purpose || "");
+      var low = p.toLowerCase();
+      for (var i=0;i<KNOWN_MODELS.length;i++){
+        if (low.indexOf(KNOWN_MODELS[i]) >= 0) return KNOWN_MODELS[i].toUpperCase();
+      }
+      var first = (p.trim().split(/\s+/)[0] || p).replace(/^\.\//,"");
+      var parts = first.split("/");
+      var base = parts[parts.length-1] || first;
+      return base || "작업";
+    }
+
     // ── 상태 ────────────────────────────────────────────────────────────────
     var nodesData = [];
-    var jobsData  = [];
-    var usageMap  = {};
-    var gpuChart  = null;
+    var jobsData  = [];     // raw (프로세스 단위, MPI 랭크별 중복 가능)
+    var jobsByNode = {};    // node -> [{user,purpose,count,status}]  (집계)
+    var usageMap  = {};     // 수동 등록 맥락
+    var cpuChart  = null;
+    var nodeSelectFilled = false;
 
-    // ── 렌더: 노드 카드 (CPU=cpu, GPU 막대=gpu(사용률), MEM=mem, 태그=gpu_model) ──
+    // raw jobs 를 node + (user|모델명) 으로 집계 (MPI 랭크 N개 → 1행 ×N)
+    function aggregateJobs(){
+      var byNode = {};
+      jobsData.forEach(function(j){
+        var node = j.node;
+        if (!byNode[node]) byNode[node] = {};
+        var key = (j.user||"") + "|" + modelName(j.purpose);
+        if (!byNode[node][key]){
+          byNode[node][key] = { user:j.user, purpose:j.purpose, count:0, status:j.status };
+        }
+        byNode[node][key].count++;
+      });
+      var out = {};
+      Object.keys(byNode).forEach(function(node){
+        out[node] = Object.keys(byNode[node]).map(function(k){ return byNode[node][k]; });
+      });
+      return out;
+    }
+
+    // ── 렌더: 노드 카드 (CPU / MEM 막대 + 실행 모델작업) ─────────────────────
     function metric(label, cls, val){
       var v = num(val);
       return '<div class="metric"><div class="ml"><span>'+label+'</span><span>'+v+'%</span></div>'+
              '<div class="bar"><span class="'+cls+'" style="width:'+v+'%"></span></div></div>';
     }
-    function ctxLine(node){
+    function ctxLines(node){
+      var html = "";
+      var jobs = jobsByNode[node];
+      if (jobs && jobs.length){
+        html += jobs.map(function(j){
+          return '<div class="node-ctx"><span class="model">'+esc(modelName(j.purpose))+'</span>'+
+                 ' · '+esc(j.user || "?")+
+                 (j.count>1 ? ' <span class="src">×'+j.count+' proc</span>' : '')+'</div>';
+        }).join("");
+      }
       var u = usageMap[node];
       if (u){
-        return '<div class="node-ctx">현재 작업: <span class="accent">'+esc(u.purpose)+'</span>'+
-               ' · '+esc(u.user)+' · ~'+esc(u.eta || "-")+
-               ' <span class="src">('+esc(u.source || "manual")+')</span></div>';
+        html += '<div class="node-ctx"><span class="manual">[등록]</span> '+esc(u.purpose)+
+                ' · '+esc(u.user)+' · ~'+esc(u.eta || "-")+
+                ' <span class="src">('+esc(u.source || "manual")+')</span></div>';
       }
-      return '<div class="node-ctx empty">현재 작업 없음</div>';
+      if (!html) html = '<div class="node-ctx empty">현재 작업 없음</div>';
+      return html;
     }
     function nodeCard(n){
       var st = normNodeStatus(n.status);
-      return '<div class="node">'+
+      return '<div class="node is-'+st+'">'+
         '<div class="top">'+
           '<span class="name">'+esc(n.node)+'</span>'+
           '<span class="badge '+st+'">'+NODE_LABEL[st]+'</span>'+
         '</div>'+
-        '<div class="gpu-tag">GPU: '+esc(n.gpu_model || "-")+'</div>'+
         metric("CPU","fill-cpu",n.cpu)+
-        metric("GPU","fill-gpu",n.gpu)+
         metric("MEM","fill-mem",n.mem)+
-        ctxLine(n.node)+
+        ctxLines(n.node)+
       '</div>';
     }
     function renderNodes(){
       document.getElementById("node-grid").innerHTML = nodesData.map(nodeCard).join("");
+      fillNodeSelect();
     }
 
-    // ── 렌더: Job 큐 (id=job_id, t=elapsed, 상태 정규화) ─────────────────────
+    // 등록 폼 노드 드롭다운을 실데이터로 채움 (master,node1~13 등 무엇이든)
+    function fillNodeSelect(){
+      if (nodeSelectFilled || !nodesData.length) return;
+      var sel = document.getElementById("reg-node");
+      sel.innerHTML = nodesData.map(function(n){
+        return '<option>'+esc(n.node)+'</option>';
+      }).join("");
+      nodeSelectFilled = true;
+    }
+
+    // ── 렌더: 실행 작업 테이블 (집계 행 = 노드+모델, 프로세스 수 표기) ───────
     function renderJobs(){
-      document.getElementById("job-body").innerHTML = jobsData.map(function(j){
+      var rows = [];
+      Object.keys(jobsByNode).forEach(function(node){
+        jobsByNode[node].forEach(function(j){
+          rows.push({ node:node, user:j.user, purpose:j.purpose, count:j.count, status:j.status });
+        });
+      });
+      rows.sort(function(a,b){ return a.node < b.node ? -1 : (a.node > b.node ? 1 : 0); });
+      var body = document.getElementById("job-body");
+      if (!rows.length){
+        body.innerHTML = '<tr class="empty-row"><td colspan="5">실행 중인 작업이 없습니다.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map(function(j){
         var st = normJobStatus(j.status);
         return '<tr>'+
-          '<td>'+esc(j.job_id)+'</td>'+
-          '<td>'+esc(j.user)+'</td>'+
           '<td>'+esc(j.node)+'</td>'+
-          '<td>'+esc(j.purpose)+'</td>'+
+          '<td>'+esc(j.user || "?")+'</td>'+
+          '<td><span class="model">'+esc(modelName(j.purpose))+'</span>'+
+              '<span class="cmd" title="'+esc(j.purpose)+'">'+esc(j.purpose)+'</span></td>'+
+          '<td><span class="ranks">×'+j.count+'</span></td>'+
           '<td><span class="st '+st+'">'+JOB_LABEL[st]+'</span></td>'+
-          '<td>'+esc(j.elapsed)+'</td>'+
         '</tr>';
       }).join("");
     }
@@ -246,10 +312,8 @@
         var s = normNodeStatus(n.status);
         if (s === "run") run++; else if (s === "maint") maint++; else idle++;
       });
-      var jrun=0, jwait=0;
-      jobsData.forEach(function(j){
-        if (normJobStatus(j.status) === "run") jrun++; else jwait++;
-      });
+      var jobCount = 0;
+      Object.keys(jobsByNode).forEach(function(node){ jobCount += jobsByNode[node].length; });
       var running = nodesData.filter(function(n){ return normNodeStatus(n.status) === "run"; });
       function avg(k){
         if (!running.length) return 0;
@@ -257,22 +321,22 @@
       }
       setText("kpi-total", nodesData.length);
       setText("kpi-run", run); setText("kpi-idle", idle); setText("kpi-maint", maint);
-      setText("kpi-wait", jwait); setText("kpi-jrun", jrun);
-      setText("kpi-cpu", avg("cpu")); setText("kpi-gpu", avg("gpu")); setText("kpi-mem", avg("mem"));
+      setText("kpi-jobs", jobCount);
+      setText("kpi-cpu", avg("cpu")); setText("kpi-mem", avg("mem"));
     }
 
-    // ── 차트: labels=node, data=gpu 사용률 ──────────────────────────────────
+    // ── 차트: labels=node, data=cpu 사용률 ──────────────────────────────────
     function buildChart(){
       if (typeof Chart === "undefined") return;
-      var ctx = document.getElementById("gpuChart");
-      gpuChart = new Chart(ctx, {
+      var ctx = document.getElementById("cpuChart");
+      cpuChart = new Chart(ctx, {
         type:"bar",
         data:{
           labels: nodesData.map(function(n){ return n.node; }),
           datasets:[{
-            label:"GPU 사용률 %",
-            data: nodesData.map(function(n){ return num(n.gpu); }),
-            backgroundColor:"#047857",
+            label:"CPU 사용률 %",
+            data: nodesData.map(function(n){ return num(n.cpu); }),
+            backgroundColor:"#1d4ed8",
             borderRadius:6
           }]
         },
@@ -284,10 +348,10 @@
       });
     }
     function updateChart(){
-      if (!gpuChart) { buildChart(); return; }
-      gpuChart.data.labels = nodesData.map(function(n){ return n.node; });
-      gpuChart.data.datasets[0].data = nodesData.map(function(n){ return num(n.gpu); });
-      gpuChart.update("none");
+      if (!cpuChart) { buildChart(); return; }
+      cpuChart.data.labels = nodesData.map(function(n){ return n.node; });
+      cpuChart.data.datasets[0].data = nodesData.map(function(n){ return num(n.cpu); });
+      cpuChart.update("none");
     }
 
     // ── fetch helper ────────────────────────────────────────────────────────
@@ -307,6 +371,7 @@
       ]).then(function(res){
         nodesData = res[0] || [];
         jobsData  = res[1] || [];
+        jobsByNode = aggregateJobs();
         usageMap  = {};
         (res[2] || []).forEach(function(u){ usageMap[u.node] = u; });
         renderNodes();
@@ -355,7 +420,6 @@
     });
 
     // ── 시작 ────────────────────────────────────────────────────────────────
-    // 폴링: 직전 tick 완료 후 3초 뒤 다음 tick (느린 네트워크에서 호출 겹침 방지)
     (function loop(){
       refresh().then(function(){ setTimeout(loop, 3000); });
     })();

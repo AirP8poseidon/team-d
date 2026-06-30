@@ -15,6 +15,10 @@ def get_collector(name: str) -> Collector:
     key = (name or "mock").strip().lower()
     if key == "mock":
         return MockCollector()
+    if key == "ingest":
+        # push 형: 각 서버가 data/incoming/<node>.json 으로 밀어 넣음 (결정 A)
+        from .ingest import IngestCollector
+        return IngestCollector()
     # TODO(실연동): "slurm" -> SlurmCollector()  (collectors/slurm.py)
     #   from .slurm import SlurmCollector; return SlurmCollector()
     # TODO(실연동): "prometheus" -> PrometheusCollector()  (collectors/prometheus.py)
