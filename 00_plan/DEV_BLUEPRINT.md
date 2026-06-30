@@ -17,10 +17,10 @@ SLURM 자원 숫자 위에 **사람의 맥락(누가·왜) + 실시간 소통 + 
 - **백엔드**: Python **FastAPI + SQLite** 단일 앱. 프론트는 정적 HTML/JS.
 - **구현 방식(B안)**: 기존 HTML 목업(`dev_part`/`userA_part`/`userB_part`)을 `static/`으로 옮겨 **가짜 데이터만 `fetch`로 교체**. 새로 그리지 않고 재사용 + 배선.
 - **실시간성**: WebSocket 안 씀. **2~3초 폴링**으로 채팅 갱신.
-- **데이터 소스**: 실서버 연동 없음. `data/`의 샘플 텍스트(squeue/sinfo/health)를 **시작 시 1회 파싱**해 SQLite 적재.
+- **데이터 소스**: 실서버 연동 없음. `data/`의 샘플 텍스트(squeue/sinfo/health)를 **시작 시 1회 파싱**해 SQLite 적재. `mpirun` 직접 실행처럼 스케줄러 큐에 안 잡히는 작업은 `node_usage` 수동 등록으로 표시한다.
 - **언어**: 한국어 UI. 디자인 토큰은 §5.
 
-> 왜 목업만으로 안 되나: 이 제품의 하이라이트는 "채팅 등록 → 모니터링에 즉시 반영" 같은 **라이브 데이터 흐름**이다. 공유 상태(DB) 없이는 위조밖에 안 되며, 채점의 동작 완성도·업무 임팩트(27점)를 스스로 포기하게 된다.
+> 왜 목업만으로 안 되나: 이 제품의 하이라이트는 "작업 맥락 등록 → 모니터링에 즉시 반영" 같은 **라이브 데이터 흐름**이다. 공유 상태(DB) 없이는 위조밖에 안 되며, 채점의 동작 완성도·업무 임팩트(27점)를 스스로 포기하게 된다.
 
 ---
 
@@ -29,7 +29,7 @@ SLURM 자원 숫자 위에 **사람의 맥락(누가·왜) + 실시간 소통 + 
 | 담당 | 페이지 | 핵심 내용 |
 |---|---|---|
 | **팀장** | `index.html` | 랜딩 (**채팅 위젯 미포함**) |
-| **팀장** | `monitoring.html` | CPU/GPU/메모리 모니터링 + **노드별 "현재 작업 맥락"(누가·왜)** 표시·등록 |
+| **팀장** | `monitoring.html` | CPU/GPU/메모리 모니터링 + **노드별 "현재 작업 맥락"(누가·왜)** 표시·등록. SLURM/PBS 밖의 `mpirun` 직접 실행도 수동 등록으로 커버 |
 | **팀원1** | `wiki.html` (정보공유) | 서버 환경 카드 · 사용법 가이드 · 노하우 게시판(검색) |
 | **팀원1** | **채팅 플로팅 위젯** | 별도 페이지 아님. **숨김/열기 토글**되는 떠 있는 채팅창 (`chat-widget.js`) |
 | **팀원2** | `stats.html` (사용량 통계) | 노드별/사용자별 사용량 집계·추이 차트. **추가 아이디어 캐치올** |
@@ -79,7 +79,7 @@ hpc-portal/
 -- [팀장] 모니터링
 nodes(node TEXT PK, status, cpu INT, gpu INT, mem INT, gpu_model)
 jobs(job_id TEXT PK, user, node, purpose, status, elapsed)
-node_usage(id PK, node, user, purpose, eta, created_at)         -- "누가·왜" 맥락
+node_usage(id PK, node, user, purpose, eta, source, created_at) -- "누가·왜" 맥락. source 예: manual/mpirun/slurm/pbs
 
 -- [팀원1] 위키 + 채팅
 servers(id PK, name, os, spec, modules, ssh)
@@ -109,7 +109,7 @@ usage_log(id PK, node, user, gpu_hours, day)                    -- 집계 시드
 [팀장]   GET  /api/monitoring/nodes         노드 상태·자원
          GET  /api/monitoring/jobs          job 큐(사용자·목적)
          GET  /api/monitoring/usage         현재 작업 맥락 목록
-         POST /api/monitoring/usage         맥락 등록 {node, user, purpose, eta}
+         POST /api/monitoring/usage         맥락 등록 {node, user, purpose, eta, source?}
 
 [팀원1]  GET  /api/wiki/servers
          GET  /api/wiki/posts?q=검색어
@@ -125,7 +125,7 @@ usage_log(id PK, node, user, gpu_hours, day)                    -- 집계 시드
 
 ## 7. 통합 접점 (4개 — 모두 `node01~08` 키로 연결)
 
-1. **node_usage → 모니터링 카드** (팀장 단독, 자기 파일 내): 노드 카드에 "현재 작업 목적/사용자/예상시간" 표시 + 등록 폼.
+1. **node_usage → 모니터링 카드** (팀장 단독, 자기 파일 내): 노드 카드에 "현재 작업 목적/사용자/예상시간/출처" 표시 + 등록 폼. `mpirun` 직접 실행 작업은 여기서 `source=mpirun` 또는 `manual`로 등록한다.
 2. **chat-widget 주입** (팀원1 소유): 팀장·팀원2 페이지는 `<script src="/static/chat-widget.js"></script>` 한 줄만 추가.
 3. **system/health 노드 정합** (팀원2): `node01~08`로 모니터링과 같은 노드 식별.
 4. **stats 집계** (팀원2): `usage_log`(자체 시드) 기반. 필요 시 `/api/monitoring/jobs`를 GET으로만 읽어 보강(쓰기 충돌 없음).
@@ -138,7 +138,7 @@ usage_log(id PK, node, user, gpu_hours, day)                    -- 집계 시드
 
 1. **공통 뼈대(팀장, 최우선 공유)**: `main.py`+`db.py`+`requirements.txt`, `common.css`+`_nav.html`, 빈 5페이지, `routers/` 5개 빈 라우터 등록. → **공유 시점이 병렬 시작 신호.**
 2. **병렬 개발** (각자 자기 파일만): 목업을 `static/`으로 이전해 `fetch` 배선.
-   - 팀장: squeue/sinfo 파싱 → nodes/jobs 적재 → 모니터링 화면 + node_usage 등록/표시.
+   - 팀장: squeue/sinfo 파싱 → nodes/jobs 적재 → 모니터링 화면 + node_usage 등록/표시. 스케줄러 미사용(`mpirun` 직접 실행 등)은 자동 탐지하지 않고 node_usage 폼으로 수동 등록.
    - 팀원1: 위키 CRUD + `chat-widget.js`(2~3초 폴링, 플로팅 토글).
    - 팀원2: `sample_health.txt`→node_health + 시스템 상태 화면, usage_log 시드→통계 차트.
 3. **통합(팀장)**: 5페이지 한 폴더 + 네비 점검 + chat-widget 주입 확인 + 노드 키 정합 스모크 테스트.
@@ -150,7 +150,7 @@ usage_log(id PK, node, user, gpu_hours, day)                    -- 집계 시드
 ## 9. 시연 시나리오 (한 흐름)
 
 1. 어느 페이지서든 **플로팅 채팅**으로 "node04 딥러닝 시작합니다, ~18시" 소통.
-2. **모니터링**: node04 카드에 현재 작업 맥락(딥러닝/김/~18시) + CPU/GPU 사용률.
+2. **모니터링**: node04에 `mpirun 딥러닝/김/~18시/source=mpirun` 작업 맥락을 등록하면 카드에 즉시 반영 + CPU/GPU 사용률 표시.
 3. **사용량 통계**: 노드별 GPU 점유 추이·사용자별 사용량 집계.
 4. **시스템 상태**: node04 온도·디스크·NFS 정상 확인.
 5. **위키**: gpu-cluster sbatch 사용법 확인.
@@ -169,6 +169,7 @@ common.css·_nav.html(§5 디자인 토큰), 빈 5페이지(index/monitoring/wik
 routers/ 5개 빈 라우터 + main.py 등록.
 이어서 모니터링(routers/monitoring.py + monitoring.html)을 §2 팀장 항목대로 개발.
 data/sample_squeue·sinfo 파싱 → nodes/jobs 적재, node_usage 등록/표시까지.
+mpirun 직접 실행처럼 squeue/PBS 큐에 안 잡히는 작업은 자동 탐지하지 말고 node_usage 폼에서 source=mpirun으로 수동 등록 가능하게 해.
 기존 dev_part/monitoring.html 목업을 static/으로 재사용하고 fetch만 배선해.
 ```
 
@@ -213,6 +214,7 @@ node 값은 반드시 node01~node08 표기(모니터링과 연결). 디자인은
 - [ ] 서버 하나로 5페이지 네비 이동 정상
 - [ ] 채팅 위젯이 4개 페이지(index 제외)에 뜬다
 - [ ] node_usage 등록 → 모니터링 카드 반영
+- [ ] squeue/PBS에 없는 `mpirun` 직접 실행 작업도 node_usage 수동 등록으로 표시 가능
 - [ ] 시연 시나리오(§9) 리허설 + 각자 자기 페이지 시연 분담
 
 ---
@@ -279,3 +281,18 @@ pip install fastapi uvicorn
 uvicorn main:app --reload --port 8000
 # http://localhost:8000  ·  API 문서 /docs
 ```
+
+---
+
+## 14. 엔지니어링 검토 반영 (잠금 결정)
+
+`/plan-eng-review`(2026-06-30)에서 6건을 잠갔다. **상세·구현 지침은 `SPEC.md` §13**을 단일 기준으로 따른다. 요약:
+
+- **1A** `db.py` 동시성 표준(요청별 연결 + `check_same_thread=False` + WAL + `busy_timeout`) — 데모 중 `database is locked` 차단.
+- **2A** 멱등 초기화(`CREATE TABLE IF NOT EXISTS` + 비었을 때만 시드) — `--reload` 재부팅 안전.
+- **3A** `node_usage`는 노드별 최신 1건만 카드 표시(§7-1 반영).
+- **4A** `_nav.html` JS 인클루드 자가주입 + `pathname` `.active`(§3 `static` 반영).
+- **5A** 파서 입력 가드(헤더/빈줄/`int` 예외) — 부팅 무중단.
+- **6A** pytest 최소 세트(파서·멱등시드·node키정합·TestClient 200).
+
+> 5건이 팀장 공통 뼈대에 모인다. §8-1 공통 뼈대 공유 **전에** 1A·2A·4A·5A를 박아 둘 것.
