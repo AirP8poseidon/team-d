@@ -1,5 +1,7 @@
 # 팀원2 핸드오버 — 사용량 통계 + 시스템 상태
 
+> ⚠ **먼저 루트 `TEAM_SYNC.md`를 읽어라.** 이 문서는 실서버 반영 *전* 작성분이라 **노드명(node01~08 고정)·GPU 전제**가 현재와 다르다. 실클러스터는 `master,node1~node13`(zero-pad 없음, GPU 없는 CPU 클러스터)이며 **라우터(stats/system)는 이미 동작·등록 완료**다. 노드명은 하드코딩 말고 API 응답대로 동적 렌더하고, GPU 표현 대신 사용/코어시간으로. 상세는 `TEAM_SYNC.md §2`(우선).
+
 > **받는 법**: 팀 git 저장소를 `git clone`(또는 `git pull`) → **네 세션**에서 이 문서 + `00_plan/DEV_BLUEPRINT.md`를 첨부/붙여넣고 시작. 공통 규칙(디자인 토큰·노드 명명 등)은 DEV_BLUEPRINT가 단일 진실 공급원이다.
 
 ---
@@ -44,7 +46,7 @@ GET  /api/system/health   노드별 온도·디스크·NFS 상태 목록
 ## 4. 화면·기능 요구사항
 
 ### 사용량 통계 (`stats.html`)
-1. **노드별 GPU 점유/사용량** 막대 또는 추이 차트 — **Chart.js 4.4.1 (CDN)** 사용.
+1. **노드별 사용(코어·작업)시간** 막대 또는 추이 차트 — **Chart.js 4.4.1 (CDN)** 사용. (※ `usage_log.gpu_hours` 는 레거시 컬럼명일 뿐, CPU 클러스터라 '사용시간'으로 라벨링. GPU 표현 금지.)
 2. **사용자별 사용량** 순위/집계.
 3. 데이터 출처는 `usage_log`. (선택) 모니터링 job을 GET으로 읽어 현재값 보강.
 
@@ -54,7 +56,7 @@ GET  /api/system/health   노드별 온도·디스크·NFS 상태 목록
 3. `GET /api/system/health` 폴링 또는 새로고침으로 갱신.
 
 ## 5. 통합 제약 (★ 가장 중요)
-- **노드 표기는 반드시 `node01`~`node08`.** 모니터링(팀장)·node_usage와 같은 키여야 "같은 노드"로 이어진다. 표기 어긋나면 통합이 깨짐.
+- **노드명은 하드코딩하지 말고 API 응답대로 동적 렌더.** 모드에 따라 mock=`node01~08` / 실데모=`master,node1~node13` 로 노드 집합이 다르다(`TEAM_SYNC.md §2-①`). 개수·표기를 코드에 박으면 실데모에서 깨진다. `/api/system/health` 가 주는 노드를 그대로 그려라.
 - 채팅 위젯은 팀원1이 만든다. 네 `stats.html`·`system.html`에는 `<script src="/static/chat-widget.js"></script>` **한 줄만** 추가하면 플로팅 채팅이 뜬다(직접 구현 X).
 
 ## 6. 완료 기준

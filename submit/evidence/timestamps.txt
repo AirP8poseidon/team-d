@@ -75,3 +75,7 @@
 
 # 2026-06-30 19:46:47 모니터링 UI CPU중심 reframe (#19)
 2026-06-30 19:46:47 hpc-portal/static/monitoring.html  (GPU제거·모델작업 중심·browse 렌더 검증)
+
+# 2026-06-30 20:16:24 팀원 배포용 통합 가이드 (#20)
+2026-06-30 20:16:24 TEAM_SYNC.md  (실서버 반영 필수 검토)
+2026-06-30 20:16:24 submit/assets/handover/README.md·member1·member2  (TEAM_SYNC 우선 배너+정정)
