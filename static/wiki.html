@@ -6,12 +6,19 @@
 <title>정보공유 · 사내 HPC 포털</title>
 <style>
   :root{
-    --bg:#f4f6fb; --paper:#ffffff; --ink:#172033; --muted:#64748b;
-    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a; --green:#047857; --orange:#b45309;
+    --bg:#f4f6fb; --paper:#fff; --ink:#172033; --muted:#64748b;
+    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a; --green:#047857; --orange:#b45309; --red:#b91c1c;
+    --radius:16px;
+    --shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.05);
+    --shadow-hover:0 10px 30px rgba(29,78,216,.13);
   }
   *{ box-sizing:border-box; }
   body{
-    margin:0; background:var(--bg); color:var(--ink);
+    margin:0; color:var(--ink);
+    background:
+      radial-gradient(1100px 480px at 88% -10%, rgba(29,78,216,.07), transparent 60%),
+      radial-gradient(900px 420px at 0% 0%, rgba(4,120,135,.05), transparent 55%),
+      var(--bg);
     font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
     line-height:1.6;
   }
@@ -29,16 +36,43 @@
   .nav .menu a:hover{ background:rgba(255,255,255,.08); color:#fff; }
   .nav .menu a.active{ background:var(--blue); color:#fff; font-weight:600; }
 
-  .wrap{ max-width:1080px; margin:0 auto; padding:26px 18px 60px; }
-  .page-head h1{ margin:6px 0 4px; font-size:26px; }
-  .page-head p{ margin:0; color:var(--muted); }
-  h2.section{ font-size:20px; margin:34px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--line); }
+  .wrap{ max-width:1080px; margin:0 auto; padding:26px 18px 64px; }
+
+  /* 히어로 헤더 */
+  .hero{
+    position:relative; overflow:hidden; border-radius:20px; padding:32px 32px 28px; margin-bottom:30px;
+    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 56%,#1d4ed8 100%);
+    color:#fff; box-shadow:0 14px 34px rgba(15,23,42,.22);
+  }
+  .hero:before{ content:""; position:absolute; right:-70px; top:-80px; width:240px; height:240px; border-radius:50%; background:rgba(255,255,255,.06); }
+  .hero:after{ content:""; position:absolute; right:60px; bottom:-90px; width:170px; height:170px; border-radius:50%; background:rgba(255,255,255,.05); }
+  .hero h1{ position:relative; margin:0 0 8px; font-size:28px; font-weight:750; letter-spacing:-.4px; }
+  .hero p{ position:relative; margin:0; color:#cbd5e1; font-size:14.5px; max-width:640px; }
+  .hero .pills{ position:relative; margin-top:18px; display:flex; gap:8px; flex-wrap:wrap; }
+  .hero .pill{
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#eaf0ff;
+    font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:999px;
+  }
+
+  /* 섹션 헤더 */
+  h2.section{ font-size:19px; margin:38px 0 16px; display:flex; align-items:center; gap:11px; }
+  h2.section .ico{
+    width:32px; height:32px; border-radius:10px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center; font-size:16px;
+    background:#e0e7ff; color:var(--blue);
+  }
 
   .card{
-    background:var(--paper); border:1px solid var(--line); border-radius:14px;
-    box-shadow:0 4px 14px rgba(15,23,42,.05); padding:18px 20px; margin-bottom:16px;
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px 20px; margin-bottom:16px;
   }
   .servers{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .server-card{ position:relative; overflow:hidden; padding-top:20px; transition:transform .16s, box-shadow .16s; }
+  .server-card:before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--blue); }
+  .server-card.t-gpu:before{ background:linear-gradient(90deg,var(--green),#10b981); }
+  .server-card.t-cpu:before{ background:linear-gradient(90deg,var(--blue),#3b82f6); }
+  .server-card.t-fat:before{ background:linear-gradient(90deg,var(--orange),#f59e0b); }
+  .server-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:#c7d2fe; }
   .server-card h3{ margin:0 0 4px; font-size:17px; display:flex; align-items:center; gap:8px; }
   .badge{ font-size:11px; padding:2px 9px; border-radius:999px; color:#fff; font-weight:600; }
   .b-gpu{ background:var(--green); }
@@ -59,7 +93,9 @@
   ol.steps > li:before{
     counter-increment:step; content:counter(step);
     position:absolute; left:0; top:0; width:30px; height:30px; border-radius:50%;
-    background:var(--blue); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:14px;
+    background:linear-gradient(140deg,#1d4ed8,#0f172a); color:#fff; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+    box-shadow:0 4px 10px rgba(29,78,216,.32);
   }
   ol.steps > li:not(:last-child):after{
     content:""; position:absolute; left:14px; top:32px; bottom:2px; width:2px; background:var(--line);
@@ -75,7 +111,12 @@
 
   .board-tools{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
   .board-tools input[type=text]{
-    flex:1; min-width:200px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font-size:14px;
+    flex:1; min-width:200px; padding:11px 14px; border:1px solid var(--line); border-radius:10px; font-size:14px;
+    background:#fff; transition:.14s;
+  }
+  .board-tools input[type=text]:focus, #writeForm input:focus, #writeForm textarea:focus,
+  .cmt-form input:focus{
+    outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(29,78,216,.13);
   }
   .btn{
     border:none; background:var(--blue); color:#fff; padding:10px 16px; border-radius:9px;
@@ -94,10 +135,15 @@
 
   ul.posts{ list-style:none; margin:0; padding:0; }
   ul.posts li{
-    border:1px solid var(--line); border-radius:11px; padding:13px 16px; margin-bottom:10px; background:var(--paper);
-    transition:.12s;
+    position:relative; border:1px solid var(--line); border-radius:12px; padding:14px 16px 14px 18px;
+    margin-bottom:11px; background:var(--paper); transition:transform .12s, box-shadow .12s, border-color .12s;
   }
-  ul.posts li:hover{ box-shadow:0 4px 12px rgba(15,23,42,.07); }
+  ul.posts li:before{
+    content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:3px;
+    background:transparent; transition:.12s;
+  }
+  ul.posts li:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(15,23,42,.08); border-color:#c7d2fe; }
+  ul.posts li:hover:before{ background:var(--blue); }
   ul.posts .ptitle{ font-weight:600; font-size:15px; color:var(--navy); }
   ul.posts .meta{ color:var(--muted); font-size:12px; margin:2px 0 6px; }
   ul.posts .summary{ font-size:13.5px; color:#374151; }
@@ -171,17 +217,23 @@
   </nav>
 
   <div class="wrap">
-    <div class="page-head">
+    <div class="hero">
       <h1>정보공유 · 위키</h1>
       <p>서버별 환경 구성, 클러스터 사용 방법, 그리고 팀원들이 직접 쌓은 노하우를 한곳에서 확인하세요.</p>
+      <div class="pills">
+        <span class="pill">🖥️ 서버 3대</span>
+        <span class="pill">📘 클러스터 사용 가이드</span>
+        <span class="pill">💡 노하우 게시판</span>
+        <span class="pill">💬 실시간 채팅</span>
+      </div>
     </div>
 
-    <h2 class="section">서버별 환경 구성</h2>
+    <h2 class="section"><span class="ico">🖥️</span>서버별 환경 구성</h2>
     <div class="servers" id="serverList">
       <div class="loading">서버 환경을 불러오는 중…</div>
     </div>
 
-    <h2 class="section">클러스터 사용 방법</h2>
+    <h2 class="section"><span class="ico">📘</span>클러스터 사용 방법</h2>
     <div class="card">
       <ol class="steps">
         <li>
@@ -228,7 +280,7 @@ Submitted batch job 184302</pre>
       </ol>
     </div>
 
-    <h2 class="section">노하우 · 팁 게시판</h2>
+    <h2 class="section"><span class="ico">💡</span>노하우 · 팁 게시판</h2>
     <div class="card">
       <div class="board-tools">
         <input type="text" id="searchInput" placeholder="제목·내용으로 검색… (예: OOM, conda, Slurm)" />
@@ -277,7 +329,7 @@ Submitted batch job 184302</pre>
         list.forEach(function(s){
           var b = badgeFor(s.name || "");
           var card = document.createElement("div");
-          card.className = "card server-card";
+          card.className = "card server-card " + b.cls.replace("b-", "t-");
           var mods = (s.modules || []).map(function(m){
             var span = document.createElement("span"); span.textContent = m; return span.outerHTML;
           }).join("");

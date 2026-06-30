@@ -4,12 +4,13 @@
 
 | 항목 | 위치 | 완료 |
 |------|------|:----:|
-| 동작하는 산출물(코드/웹앱/스크립트 등) | 프로젝트 루트 또는 `src/` | ☐ |
-| 작업 기록(개인별) | `submit/PROCESS_LOG.md` → 제출 시 **영문** `<팀영문명>_<이름로마자>_PROCESS_LOG.md` | ☐ |
-| 효과 측정(Before/After) | `submit/PROCESS_LOG.md` + `submit/BEFORE_AFTER.md` (업무에 맞는 지표) | ☐ |
-| 재사용 자산 | `submit/assets/` (프롬프트·스킬·CLAUDE.md 사본 등) | ☐ |
-| 증빙(자동) | `submit/evidence/timestamps.txt` (에이전트 자동 생성) | ☐ |
-| 발표자료(5분) | 자유 위치 | ☐ |
+| 동작하는 산출물(코드/웹앱/스크립트 등) | `routers/`, `static/`, `dev_run.py` | ✅ |
+| 작업 기록(개인별) | `submit/PROCESS_LOG.md` → 제출용 **영문** `teamD_KMJ_PROCESS_LOG.md` | ✅ |
+| 효과 측정(Before/After) | `submit/PROCESS_LOG.md` + `submit/BEFORE_AFTER.md` | ✅ |
+| 재사용 자산 | `submit/assets/` (prompts.md·QUICKSTART.md·CLAUDE.md.copy) | ✅ |
+| 증빙(자동) | `submit/evidence/timestamps.txt` | ✅ |
+| 발표자료(5분) | 자유 위치 | ☐ (미정) |
+| 개인 브랜치 push | `kimminju` 브랜치 | ☐ (사용자 요청 시) |
 
 > 화면 캡처 같은 수작업 증빙은 **안 해도 됩니다.** 무임승차 검증은 Day2 미니시연으로 합니다.
 

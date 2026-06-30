@@ -90,11 +90,18 @@ def list_messages(after: int = 0, q: str = ""):
             "WHERE body LIKE ? OR sender LIKE ? ORDER BY id",
             (like, like),
         ).fetchall()
-    else:
+    elif after > 0:
+        # 폴링(증분): after 이후 새 메시지만 시간순
         rows = con.execute(
             "SELECT id,sender,body,created_at FROM messages WHERE id > ? ORDER BY id",
             (after,),
         ).fetchall()
+    else:
+        # 초기 로드: 최근 50개만 (T7) — DESC로 뽑고 시간순으로 되돌림
+        rows = con.execute(
+            "SELECT id,sender,body,created_at FROM messages ORDER BY id DESC LIMIT 50",
+        ).fetchall()
+        rows = list(reversed(rows))
     con.close()
     return [dict(r) for r in rows]
 
