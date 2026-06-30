@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
 
-from db import db_dep
+from db import db_dep, NODES
 
 router = APIRouter(prefix="/api/system", tags=["system"])
 
@@ -71,17 +71,23 @@ def _maybe_record(db, gap_sec=20):
 
 # ── 확장: 노드별 네트워크 상태(node_net) — 라우터 자기완결(db.py 미수정) ──
 # 1GbE(1000Mbps) 가정. rx/tx Mbps · 지연 ms · 링크 up/down. 색상 판정은 화면이 처리.
-_NET_SEED = [
-    # node,   rx,  tx,  latency_ms, link_up
-    ("node01", 320, 210, 2, 1),
-    ("node02", 910, 680, 8, 1),   # 사용률 91% → 위험(포화)
-    ("node03", 540, 300, 5, 1),
-    ("node04", 120, 90, 2, 1),
-    ("node05", 760, 720, 12, 1),  # 사용률 76% · 지연 12 → 주의(혼잡)
-    ("node06", 0, 0, 0, 0),       # 링크 단절 → 위험
-    ("node07", 430, 380, 4, 1),
-    ("node08", 180, 140, 3, 1),
-]
+# 노드 집합은 db.NODES(실모드=master,node1~13 / mock=node01~08)를 따라 시드 — 실노드명과 일치.
+
+
+def _net_for(node, idx):
+    """노드별 네트워크 표본을 결정적으로 생성 (node 문자열 기반 시드 → 재시작 동일).
+
+    시각적 다양성을 위해 일부 노드를 포화(위험)/단절로 둔다.
+    """
+    seed = sum(ord(c) for c in node)
+    rng = random.Random(seed)
+    if idx % 7 == 1:          # 주기적으로 한 노드는 포화(사용률↑ → 위험)
+        return 910, 680, 8, 1
+    if idx % 11 == 5:         # 주기적으로 한 노드는 링크 단절(위험)
+        return 0, 0, 0, 0
+    rx = rng.randint(80, 780)
+    tx = rng.randint(60, rx)
+    return rx, tx, rng.randint(2, 9), 1
 
 
 def _ensure_net(db):
@@ -94,12 +100,13 @@ def _ensure_net(db):
 
 
 def _seed_net_if_empty(db):
-    """2A 멱등: 비었을 때만 노드별 네트워크 상태 시드."""
+    """2A 멱등: 비었을 때만 노드별 네트워크 상태 시드 (db.NODES 기반 — 실노드명과 일치)."""
     _ensure_net(db)
     if db.execute("SELECT COUNT(*) AS c FROM node_net").fetchone()["c"] > 0:
         return
     now = datetime.now().isoformat(timespec="seconds")
-    for node, rx, tx, lat, up in _NET_SEED:
+    for idx, node in enumerate(NODES):
+        rx, tx, lat, up = _net_for(node, idx)
         db.execute(
             "INSERT INTO node_net(node, rx_mbps, tx_mbps, latency_ms, link_up, updated_at) "
             "VALUES(?,?,?,?,?,?)",
@@ -110,7 +117,7 @@ def _seed_net_if_empty(db):
 
 @router.get("/health")
 def get_health(db=Depends(db_dep)):
-    """노드별 온도·디스크·NFS 상태 (node01..08). SPEC §7.4 스키마."""
+    """노드별 온도·디스크·NFS 상태 (db.NODES 기준). SPEC §7.4 스키마."""
     rows = db.execute(
         "SELECT node, temp, disk_status, nfs_status, updated_at "
         "FROM node_health ORDER BY node"
@@ -138,7 +145,7 @@ def get_history(points: int = 40, db=Depends(db_dep)):
 
 @router.get("/network")
 def get_network(live: bool = True, db=Depends(db_dep)):
-    """노드별 네트워크 상태(확장): 수신·송신 처리량(Mbps)·지연(ms)·링크 up/down (node01..08).
+    """노드별 네트워크 상태(확장): 수신·송신 처리량(Mbps)·지연(ms)·링크 up/down (db.NODES 기준).
 
     live=True: 폴링 시 살아있는 느낌을 위해 rx/tx에 소폭 변동(저장 안 함, 표시용). 링크 단절은 0 고정.
     1GbE(1000Mbps) 기준 사용률·임계 색상은 화면(system.html)이 처리.

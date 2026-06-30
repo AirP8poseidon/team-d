@@ -83,3 +83,6 @@
 # 2026-06-30 20:55:01 팀원 브랜치 통합 완성본 (#21)
 2026-06-30 20:55:01 hpc-portal 정적 페이지 사이드바 전역 통일 + 팀원 페이지 통합
 2026-06-30 20:55:01 submit 개인 로그 3인 분리 보존(kimminju·jeongseungmyong·LeeSeongHoo)
+
+# 2026-06-30 21:02:56 통합 후 다듬기 — 노드명 일관 (#22)
+2026-06-30 21:02:56 db.py·routers/system.py·static/system.html (실노드명 동적화)

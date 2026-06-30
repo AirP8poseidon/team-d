@@ -142,17 +142,18 @@ def seed_if_empty() -> None:
     """
     conn = get_db()
     try:
-        # usage_log — 노드별/사용자별/추이 집계용 시드 (node01..node08 사용)
+        # usage_log — 노드별/사용자별/추이 집계용 시드 (db.NODES 기준 — 실모드/목업 모두 일치)
         if _count(conn, "usage_log") == 0:
+            nd = lambda i: NODES[i % len(NODES)]  # 활성 노드 집합에 매핑
             usage_rows = [
-                ("node01", "kim", 12.5, "2026-06-28"),
-                ("node02", "lee", 4.0, "2026-06-28"),
-                ("node04", "kim", 20.0, "2026-06-29"),
-                ("node04", "park", 8.5, "2026-06-29"),
-                ("node05", "choi", 6.0, "2026-06-29"),
-                ("node07", "lee", 15.0, "2026-06-30"),
-                ("node08", "park", 9.0, "2026-06-30"),
-                ("node02", "kim", 3.5, "2026-06-30"),
+                (nd(0), "kim", 12.5, "2026-06-28"),
+                (nd(1), "lee", 4.0, "2026-06-28"),
+                (nd(3), "kim", 20.0, "2026-06-29"),
+                (nd(3), "park", 8.5, "2026-06-29"),
+                (nd(4), "choi", 6.0, "2026-06-29"),
+                (nd(6), "lee", 15.0, "2026-06-30"),
+                (nd(7), "park", 9.0, "2026-06-30"),
+                (nd(1), "kim", 3.5, "2026-06-30"),
             ]
             conn.executemany(
                 "INSERT INTO usage_log (node, user, gpu_hours, day) VALUES (?,?,?,?)",
