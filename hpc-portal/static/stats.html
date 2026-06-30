@@ -42,11 +42,11 @@
 
   <div class="container">
     <h1>사용량 통계</h1>
-    <p class="subtitle">노드별/사용자별 GPU-hours 집계 · 추이 · 사용자별 스토리지 용량.</p>
+    <p class="subtitle">노드별/사용자별 사용시간(코어·h) 집계 · 추이 · 사용자별 스토리지 용량.</p>
 
     <div class="kpi-row">
-      <div class="kpi"><div class="label">총 GPU-hours</div><div class="value blue" id="kpi-total">-</div></div>
-      <div class="kpi"><div class="label">일평균 GPU-hours</div><div class="value" id="kpi-avg">-</div></div>
+      <div class="kpi"><div class="label">총 사용시간(코어·h)</div><div class="value blue" id="kpi-total">-</div></div>
+      <div class="kpi"><div class="label">일평균 사용시간(h)</div><div class="value" id="kpi-avg">-</div></div>
       <div class="kpi"><div class="label">최번일(최대 사용)</div><div class="value orange" id="kpi-peak">-</div></div>
       <div class="kpi"><div class="label">최다 사용자</div><div class="value green" id="kpi-top">-</div></div>
       <div class="kpi"><div class="label">활성 사용자</div><div class="value" id="kpi-users">-</div></div>
@@ -54,12 +54,12 @@
     </div>
 
     <div class="chart-box">
-      <h3>일자별 GPU 사용량 추이 (최근 1주일)</h3>
+      <h3>일자별 사용시간 추이 (최근 1주일)</h3>
       <canvas id="trendChart" height="90"></canvas>
     </div>
 
     <div class="grid2">
-      <div class="chart-box"><h3>노드별 GPU-hours</h3><canvas id="nodeChart" height="150"></canvas></div>
+      <div class="chart-box"><h3>노드별 사용시간(코어·h)</h3><canvas id="nodeChart" height="150"></canvas></div>
       <div class="chart-box"><h3>사용자별 사용량 순위</h3><canvas id="userChart" height="150"></canvas></div>
     </div>
 
@@ -84,13 +84,13 @@
 
     function makeBar(ctx,labels,data,color,horizontal,unit){
       return new Chart(ctx,{type:"bar",
-        data:{labels,datasets:[{label:unit||"GPU-hours",data,backgroundColor:color,borderRadius:6}]},
+        data:{labels,datasets:[{label:unit||"사용시간(h)",data,backgroundColor:color,borderRadius:6}]},
         options:{indexAxis:horizontal?"y":"x",responsive:true,plugins:{legend:{display:false}},
           scales:{x:{beginAtZero:true},y:{beginAtZero:true}}}});
     }
     function makeLine(ctx,labels,data){
       return new Chart(ctx,{type:"line",
-        data:{labels,datasets:[{label:"GPU-hours",data,borderColor:C.blue,backgroundColor:"rgba(29,78,216,.12)",fill:true,tension:.3,pointRadius:3}]},
+        data:{labels,datasets:[{label:"사용시간(h)",data,borderColor:C.blue,backgroundColor:"rgba(29,78,216,.12)",fill:true,tension:.3,pointRadius:3}]},
         options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
     }
     const setText=(id,v)=>{document.getElementById(id).textContent=v;};
