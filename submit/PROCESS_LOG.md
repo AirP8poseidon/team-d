@@ -169,6 +169,19 @@
   - 검증: `/api/system/disk` 8노드(node06 96.2%·node02/03 75~78%), `/api/stats/capacity` 사용률 정렬·정합, pytest **7 passed**(disk 스키마·used_pct·정렬 검증 추가).
 - 막힘 → 해결: 디스크 정량 용량은 SPEC 잠금 node_health/sample_health 스키마에 없음 → collector/db.py 변경 없이 자기완결 node_disk 로 추가(network·history와 동일 패턴).
 
+### [#12] 시스템 상태 — 서버 디스크 용량(노드별) 섹션 제거
+- 작성자(팀원): 정승명 (팀원2)
+- 목표: 시스템 상태 페이지에서 서버 디스크 용량(노드별) 섹션을 삭제(요구사항 변경).
+- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
+  > "시스템 상태에서 서버 디스크 용량(노드별)은 삭제."
+- 사용한 기법: 기능 제거(프론트 섹션 + 백엔드 엔드포인트/테이블/테스트 일괄 정리)
+- 결과:
+  - `hpc-portal/static/system.html`: "서버 디스크 용량(노드별)" 섹션·게이지 카드·`loadDisk`/`diskCard`/폴링 제거.
+  - `hpc-portal/routers/system.py`: `node_disk` 자기완결 테이블·시드·**`GET /api/system/disk`** 제거, docstring 정리. (온도추이·네트워크 확장은 유지)
+  - `hpc-portal/tests/test_team2_ext.py`: `/api/system/disk` 검증 제거. pytest **7 passed**.
+  - 사용량 통계의 '사용자별 스토리지 용량'(별도 `user_storage`)·system의 `disk_status`(health)는 그대로 유지.
+- 막힘 → 해결: 없음(자기완결 확장이라 health·db.py 영향 없이 깔끔 제거).
+
 ---
 
 ## 마무리 요약 (1~2줄)
