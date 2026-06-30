@@ -90,6 +90,13 @@
     <div style="height:22px"></div>
 
     <div class="sec-head">
+      <h2>서버 디스크 용량 (노드별)</h2>
+      <div class="updated" id="disk-sum">클러스터 전체 -- · 2.5초 자동</div>
+    </div>
+    <div class="nodes" id="disk-grid"></div>
+    <div style="height:22px"></div>
+
+    <div class="sec-head">
       <h2>노드별 상태 (node01~08)</h2>
       <div class="filters" id="filters">
         <button data-f="all" class="active">전체</button>
@@ -207,6 +214,31 @@
         document.getElementById("net-grid").innerHTML=rows.map(netCard).join("");
       }catch(e){}
     }
+    // ── 서버(노드)별 디스크 용량 (확장) — 직관적 게이지 ──
+    const diskGrade = p => p>=90 ? "red" : p>=70 ? "orange" : "green";
+    const fmtGB = g => g>=1000 ? (g/1000).toFixed(1)+"TB" : g+"GB";
+    function diskCard(n){
+      const p=n.used_pct, g=diskGrade(p), free=n.total_gb-n.used_gb;
+      return '<div class="node '+(g==="red"?"red":"")+'">'+
+        '<div class="top"><span class="name">'+n.node+'</span><span class="chip '+g+'">'+GTXT[g]+'</span></div>'+
+        '<div class="metric"><div class="ml"><span>디스크 사용률</span><b>'+p+'%</b></div>'+
+          '<div class="bar"><span class="fill '+g+'" style="width:'+Math.min(100,p)+'%"></span></div></div>'+
+        '<div class="states">'+
+          '<div class="state"><div class="sl">사용</div><b>'+fmtGB(n.used_gb)+'</b></div>'+
+          '<div class="state"><div class="sl">전체</div><b>'+fmtGB(n.total_gb)+'</b></div>'+
+          '<div class="state"><div class="sl">여유</div><b>'+fmtGB(free)+'</b></div>'+
+        '</div>'+
+      '</div>';
+    }
+    async function loadDisk(){
+      try{ const rows=await (await fetch("/api/system/disk")).json();
+        document.getElementById("disk-grid").innerHTML=rows.map(diskCard).join("");
+        const used=rows.reduce((s,n)=>s+n.used_gb,0), total=rows.reduce((s,n)=>s+n.total_gb,0);
+        const pct=total?Math.round(used/total*100):0;
+        document.getElementById("disk-sum").innerHTML=
+          "클러스터 전체 <b>"+fmtGB(used)+" / "+fmtGB(total)+" ("+pct+"%)</b> · 2.5초 자동";
+      }catch(e){}
+    }
 
     let lastRows=null;
     async function load(){
@@ -215,9 +247,10 @@
         document.getElementById("upd").textContent=new Date().toTimeString().slice(0,5);
       }catch(e){}
     }
-    load(); loadTrend(); loadNet();
+    load(); loadTrend(); loadNet(); loadDisk();
     setInterval(load,2500);
     setInterval(loadNet,2500);
+    setInterval(loadDisk,2500);
     setInterval(loadTrend,20000);
   </script>
 

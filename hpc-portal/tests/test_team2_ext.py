@@ -29,6 +29,16 @@ def test_system_health_schema_and_history():
         assert len(net) == 8
         assert set(net[0]) == {"node", "rx_mbps", "tx_mbps", "latency_ms", "link_up", "updated_at"}
 
+        # 서버(노드)별 디스크 용량(확장) — 스키마·사용률 정합
+        r = client.get("/api/system/disk")
+        assert r.status_code == 200
+        disk = r.json()
+        assert len(disk) == 8
+        assert set(disk[0]) == {"node", "used_gb", "total_gb", "used_pct", "updated_at"}
+        for d in disk:
+            assert 0 <= d["used_gb"] <= d["total_gb"]      # 사용량은 총량 이내
+            assert abs(d["used_pct"] - round(d["used_gb"] / d["total_gb"] * 100, 1)) < 0.1
+
 
 def test_stats_usage_core_and_extensions():
     with TestClient(main.app) as client:
@@ -49,6 +59,12 @@ def test_stats_usage_core_and_extensions():
         assert {ref["key"] for ref in cap} == {"w1", "d3", "today", "now"}
         for ref in cap:
             assert {"key", "label", "cutoff", "users"} <= set(ref)
-            assert all(set(x) == {"user", "used_gb"} for x in ref["users"])
+            assert all(set(x) == {"user", "used_gb", "quota_gb", "used_pct"} for x in ref["users"])
         tot = {ref["key"]: sum(x["used_gb"] for x in ref["users"]) for ref in cap}
         assert tot["now"] >= tot["w1"]   # 스토리지는 증가 경향 → 현재가 1주일전 이상
+        # 사용률 = used/quota 정합 + 사용률 내림차순 정렬
+        for ref in cap:
+            for x in ref["users"]:
+                assert abs(x["used_pct"] - round(x["used_gb"] / x["quota_gb"] * 100, 1)) < 0.1
+            pcts = [x["used_pct"] for x in ref["users"]]
+            assert pcts == sorted(pcts, reverse=True)

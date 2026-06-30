@@ -76,6 +76,8 @@ def get_usage(db=Depends(db_dep)):
 
 # 사용자별 기준 스토리지 점유 용량(GB) — 결정적. 스토리지는 시간이 갈수록 누적 증가.
 _STORAGE_BASE = {"kim": 820.0, "lee": 540.0, "park": 1180.0, "choi": 360.0}
+# 사용자별 스토리지 쿼터(GB) — 사용률·임계 색상의 기준(직관적 게이지용).
+_STORAGE_QUOTA = {"kim": 1500.0, "lee": 1000.0, "park": 2000.0, "choi": 1000.0}
 
 
 def _ensure_user_storage(db, days=7):
@@ -109,7 +111,8 @@ def _ensure_user_storage(db, days=7):
 def get_capacity(db=Depends(db_dep)):
     """사용자별 스토리지 사용량(GB)을 기준 시점별 스냅샷으로 — 1주일전/3일전/오늘 00시/현재시각.
 
-    누적합이 아니라 그 시점의 디스크 점유 용량(GB). '오늘 00시'=어제 스냅샷, '현재시각'=오늘.
+    누적합이 아니라 그 시점의 디스크 점유 용량(GB) + 쿼터 대비 사용률(%).
+    '오늘 00시'=어제 스냅샷, '현재시각'=오늘. 사용률 높은 순으로 정렬(쿼터 임박 사용자 먼저).
     """
     _ensure_user_storage(db)
     today = date.today()
@@ -122,10 +125,19 @@ def get_capacity(db=Depends(db_dep)):
     out = []
     for key, label, cutoff in refs:
         # 기준일 이하 가장 최근 스냅샷(보통 그 날 자체)
-        users = [dict(r) for r in db.execute(
+        rows = db.execute(
             "SELECT user, used_gb FROM user_storage "
-            "WHERE day = (SELECT MAX(day) FROM user_storage WHERE day <= ?) "
-            "ORDER BY used_gb DESC", (cutoff,)
-        ).fetchall()]
+            "WHERE day = (SELECT MAX(day) FROM user_storage WHERE day <= ?)", (cutoff,)
+        ).fetchall()
+        users = []
+        for r in rows:
+            quota = _STORAGE_QUOTA.get(r["user"], 1000.0)
+            users.append({
+                "user": r["user"],
+                "used_gb": r["used_gb"],
+                "quota_gb": quota,
+                "used_pct": round(r["used_gb"] / quota * 100, 1) if quota else 0,
+            })
+        users.sort(key=lambda u: u["used_pct"], reverse=True)
         out.append({"key": key, "label": label, "cutoff": cutoff, "users": users})
     return {"references": out}

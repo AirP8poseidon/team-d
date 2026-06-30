@@ -26,6 +26,15 @@
     .cap-btns button:hover{background:#f1f5f9;}
     .cap-btns button.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600;}
     .cap-sub{color:var(--muted);font-size:.8rem;margin:0 0 10px;}
+
+    /* 사용자별 스토리지 게이지 (쿼터 대비) */
+    .gauge{margin:12px 0;}
+    .gauge .gl{display:flex;justify-content:space-between;align-items:baseline;font-size:.88rem;margin-bottom:5px;}
+    .gauge .gl .gu{font-weight:600;}
+    .gauge .gl .gv{color:var(--muted);font-size:.82rem;}
+    .gbar{height:14px;background:#e8edf5;border-radius:7px;overflow:hidden;}
+    .gbar>span{display:block;height:100%;border-radius:7px;transition:width .6s ease;}
+    .gbar .g{background:var(--green);} .gbar .o{background:var(--orange);} .gbar .r{background:var(--red);}
   </style>
 </head>
 <body>
@@ -65,13 +74,13 @@
         </div>
       </div>
       <p class="cap-sub" id="cap-sub"></p>
-      <canvas id="capChart" height="110"></canvas>
+      <div id="capGauges"></div>
     </div>
   </div>
 
   <script>
     const C={blue:"#1d4ed8",green:"#047857",orange:"#b45309"};
-    let nodeChart=null,userChart=null,trendChart=null,capChart=null;
+    let nodeChart=null,userChart=null,trendChart=null;
 
     function makeBar(ctx,labels,data,color,horizontal,unit){
       return new Chart(ctx,{type:"bar",
@@ -111,14 +120,20 @@
       }
     }
 
-    // ── 사용자별 스토리지 용량(기준 시점 버튼) ──
+    // ── 사용자별 스토리지 용량(기준 시점 버튼) — 쿼터 대비 직관적 게이지 ──
     let capData={}, curCap="today";
+    const capCls = p => p>=90 ? "r" : p>=70 ? "o" : "g";
     function renderCap(k){
       const ref=capData[k]; if(!ref) return;
-      const labels=ref.users.map(u=>u.user), data=ref.users.map(u=>u.used_gb);
-      document.getElementById("cap-sub").textContent="기준: "+ref.label+" ("+ref.cutoff+") · 사용자별 스토리지 점유 용량(GB)";
-      if(!capChart) capChart=makeBar(document.getElementById("capChart"),labels,data,C.blue,false,"스토리지(GB)");
-      else{ capChart.data.labels=labels; capChart.data.datasets[0].data=data; capChart.update("none"); }
+      document.getElementById("cap-sub").textContent=
+        "기준: "+ref.label+" ("+ref.cutoff+") · 사용자별 스토리지 점유 / 쿼터 (사용률 높은 순)";
+      document.getElementById("capGauges").innerHTML = ref.users.map(u=>{
+        const p=u.used_pct;
+        return '<div class="gauge"><div class="gl">'+
+          '<span class="gu">'+u.user+'</span>'+
+          '<span class="gv">'+u.used_gb+' / '+u.quota_gb+' GB · <b>'+p+'%</b></span></div>'+
+          '<div class="gbar"><span class="'+capCls(p)+'" style="width:'+Math.min(100,p)+'%"></span></div></div>';
+      }).join("");
     }
     async function loadCap(){
       try{ const d=await (await fetch("/api/stats/capacity")).json();

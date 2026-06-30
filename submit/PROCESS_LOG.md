@@ -155,6 +155,20 @@
   - 검증: `/api/stats/capacity` 기준시점 총량 단조 증가(2903→3025→3098→3116 GB), 사용자별 현실적 GB(park≈1.2TB·kim≈850GB), pytest **7 passed**(capacity 스키마 `used_gb`·증가 검증으로 갱신).
 - 막힘 → 해결: 스토리지는 GPU-hours와 무관한 '점유 용량'(시점 스냅샷) → usage_log를 건드리지 않고 db.py 미수정 자기완결 `user_storage`로 분리(온도·네트워크와 같은 '운영 가시성' 확장 패턴).
 
+### [#11] 서버용량(디스크) 체크 — 빠른 스냅샷 + 직관적 게이지 시각화 (시스템 상태 & 사용량 통계)
+- 작성자(팀원): 정승명 (팀원2)
+- 목표: 서버 용량 체크 시 전 파일을 du 로 스캔하면 오래 걸림 → 미리 적재한 스냅샷으로 빠르게 보고, 시각화를 직관적으로.
+- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
+  > "서버용량 체크 부분에서 모든 파일을 찾고 체크할 때 시간이 많이 소요되어 빠르게 체크한 후 시각화도 직관적으로 수정."
+- 사용한 기법: (c) 기존 노드 카드·게이지(.bar/.fill)·임계 색상 토큰 재사용, 자기완결 확장 테이블 패턴
+- 결과:
+  - `hpc-portal/routers/system.py`: 자기완결 **`node_disk(node, used_gb, total_gb, updated_at)`** 멱등 시드 + **`GET /api/system/disk`**(used_pct 계산, live 소폭 변동). 전 파일 스캔 없이 **스냅샷 즉시 응답 = 빠른 체크**. health disk_status(node03 warn·node06 crit)와 정합.
+  - `hpc-portal/static/system.html`: "서버 디스크 용량(노드별)" 섹션 — **사용률 게이지 바 + 사용/전체/여유 GB**, 임계 색상(70/90%), **클러스터 전체 요약(사용/총·%)**, 2.5초 폴링.
+  - `hpc-portal/routers/stats.py`: `GET /api/stats/capacity` 응답에 **쿼터(quota_gb)·사용률(used_pct)** 추가, 사용률 내림차순 정렬.
+  - `hpc-portal/static/stats.html`: 사용자별 스토리지를 막대차트→**쿼터 대비 직관적 게이지 행**(used/quota GB·% + 색)으로 개선.
+  - 검증: `/api/system/disk` 8노드(node06 96.2%·node02/03 75~78%), `/api/stats/capacity` 사용률 정렬·정합, pytest **7 passed**(disk 스키마·used_pct·정렬 검증 추가).
+- 막힘 → 해결: 디스크 정량 용량은 SPEC 잠금 node_health/sample_health 스키마에 없음 → collector/db.py 변경 없이 자기완결 node_disk 로 추가(network·history와 동일 패턴).
+
 ---
 
 ## 마무리 요약 (1~2줄)

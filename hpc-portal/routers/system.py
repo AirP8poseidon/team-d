@@ -3,10 +3,14 @@
 SPEC §7.4:
   GET /api/system/health  -> [{node, temp, disk_status, nfs_status, updated_at}]
 확장(FR-Y3 운영 가시성):
-  GET /api/system/history -> {labels, avg, max}  # CPU 온도 추이(평균·최고)
+  GET /api/system/history -> {labels, avg, max}    # CPU 온도 추이(평균·최고)
+  GET /api/system/network -> [{node, rx_mbps, ...}] # 노드별 네트워크 상태
+  GET /api/system/disk    -> [{node, used_gb, total_gb, used_pct, updated_at}]
+                            # 서버(노드)별 디스크 용량 — 미리 적재한 스냅샷이라 즉시 응답
+                            # (실제 du 전체 파일 스캔 없이 빠른 체크).
 
 node_health 는 컬렉터(mock)가 sample_health.txt 로 채운다(읽기 모델).
-온도 추이는 자기완결 확장 테이블 health_history 로 관리 — db.py 미수정, 라우터가 멱등 생성/기록.
+온도 추이·네트워크·디스크 용량은 자기완결 확장 테이블로 관리 — db.py 미수정, 라우터가 멱등 생성/시드.
 """
 from __future__ import annotations
 
@@ -152,5 +156,58 @@ def get_network(live: bool = True, db=Depends(db_dep)):
         if live and d["link_up"]:
             d["rx_mbps"] = max(0, min(1000, d["rx_mbps"] + random.randint(-20, 20)))
             d["tx_mbps"] = max(0, min(1000, d["tx_mbps"] + random.randint(-20, 20)))
+        out.append(d)
+    return out
+
+
+# ── 확장: 서버(노드)별 디스크 용량(node_disk) — 라우터 자기완결(db.py 미수정) ──
+# 실제로는 du 로 전 파일을 스캔해야 해 느리다 → 미리 적재한 스냅샷을 즉시 응답(빠른 체크).
+_DISK_SEED = [
+    # node,   used_gb, total_gb  (사용률%)
+    ("node01", 320, 1000),   # 32% 정상
+    ("node02", 760, 1000),   # 76% 주의
+    ("node03", 1560, 2000),  # 78% 주의 (health disk=warning 과 정합)
+    ("node04", 290, 1000),   # 29% 정상
+    ("node05", 540, 1000),   # 54% 정상
+    ("node06", 3850, 4000),  # 96% 위험 (health disk=critical 과 정합)
+    ("node07", 480, 1000),   # 48% 정상
+    ("node08", 360, 1000),   # 36% 정상
+]
+
+
+def _seed_disk_if_empty(db):
+    """2A 멱등: 비었을 때만 노드별 디스크 사용량 스냅샷 시드."""
+    db.execute(
+        "CREATE TABLE IF NOT EXISTS node_disk("
+        "node TEXT PRIMARY KEY, used_gb INTEGER NOT NULL, total_gb INTEGER NOT NULL, "
+        "updated_at TEXT NOT NULL)"
+    )
+    if db.execute("SELECT COUNT(*) AS c FROM node_disk").fetchone()["c"] > 0:
+        return
+    now = datetime.now().isoformat(timespec="seconds")
+    for node, used, total in _DISK_SEED:
+        db.execute(
+            "INSERT INTO node_disk(node, used_gb, total_gb, updated_at) VALUES(?,?,?,?)",
+            (node, used, total, now),
+        )
+    db.commit()
+
+
+@router.get("/disk")
+def get_disk(live: bool = True, db=Depends(db_dep)):
+    """서버(노드)별 디스크 용량(확장): 사용/총 용량(GB)·사용률% (node01..08).
+
+    스냅샷이라 전 파일 스캔 없이 즉시 응답. live=True 면 used_gb 에 소폭 변동(표시용, 저장 안 함).
+    임계 색상(70/90%)은 화면(system.html)이 처리.
+    """
+    _seed_disk_if_empty(db)
+    out = []
+    for r in db.execute(
+        "SELECT node, used_gb, total_gb, updated_at FROM node_disk ORDER BY node"
+    ).fetchall():
+        d = dict(r)
+        if live:
+            d["used_gb"] = max(0, min(d["total_gb"], d["used_gb"] + random.randint(-8, 8)))
+        d["used_pct"] = round(d["used_gb"] / d["total_gb"] * 100, 1) if d["total_gb"] else 0
         out.append(d)
     return out
