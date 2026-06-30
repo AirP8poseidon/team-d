@@ -12,7 +12,11 @@ import sqlite3
 from datetime import datetime
 
 # ── T8: 통합 키 — 모든 node-keyed 테이블/파일이 이 집합을 공유한다 ────────────
-NODES = [f"node{i:02d}" for i in range(1, 9)]  # node01 .. node08
+# 실클러스터는 HPC_NODES 환경변수로 실제 노드명을 주입한다.
+#   예) export HPC_NODES="master,node1,node2,...,node13"
+# 미설정 시 데모/mock 기본값(node01..node08) — 샘플·테스트가 이 집합을 쓴다.
+_DEFAULT_NODES = [f"node{i:02d}" for i in range(1, 9)]  # node01 .. node08
+NODES = [n.strip() for n in os.environ.get("HPC_NODES", "").split(",") if n.strip()] or _DEFAULT_NODES
 
 # DB 경로. 테스트는 환경변수 HPC_DB_PATH 로 임시 DB를 가리킬 수 있다.
 _DEFAULT_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.db")
