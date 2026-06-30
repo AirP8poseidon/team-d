@@ -204,10 +204,15 @@ def main() -> int:
     ap.add_argument("--interval", type=int, default=int(os.environ.get("INTERVAL", "5")))
     ap.add_argument("--loop", action="store_true", help="interval 마다 반복 푸시")
     ap.add_argument("--out", help="scp 대신 이 파일로 JSON 만 저장(테스트)")
+    ap.add_argument("--stdout", action="store_true",
+                    help="scp 대신 JSON 을 표준출력으로 (scan_cluster.sh 가 SSH로 받아감)")
     args = ap.parse_args()
 
     def one():
         rep = build_report(args.node)
+        if args.stdout:
+            sys.stdout.write(json.dumps(rep, ensure_ascii=False))
+            return True
         if args.out:
             with open(args.out, "w", encoding="utf-8") as f:
                 json.dump(rep, f, ensure_ascii=False, indent=2)

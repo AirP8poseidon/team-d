@@ -49,4 +49,52 @@
 ## 테스트(전송 없이 JSON 만)
 ```bash
 python3 node_report.py --node node01 --out /tmp/node01.json   # 수집 결과 확인
+python3 node_report.py --node node01 --stdout                 # JSON 을 표준출력으로
 ```
+
+---
+
+# 방식 2: 클러스터 루프 스캔 (master + node1..node13) — `scan_cluster.sh`
+
+노드마다 에이전트를 띄우는 대신, **한 호스트에서 모든 노드를 SSH로 순회**하며 수집한다.
+HPC는 보통 `master → 각 node` 무암호 SSH가 이미 있어 이 방식이 운영이 편하다.
+
+```
+[scan_cluster.sh 도는 호스트]  for n in master node1..node13:
+    ssh n  python3 node_report.py --node n --stdout   ──▶  data/incoming/n.json
+```
+
+## 노드 이름 설정 (중요 — 포털·스캐너 양쪽 동일하게)
+실클러스터 노드명을 `HPC_NODES` 로 주입한다. **포털과 스캐너 둘 다** 같은 값을 써야
+ingest 가 그 노드를 받아들인다(통합 키).
+```bash
+export HPC_NODES="master,node1,node2,node3,node4,node5,node6,node7,node8,node9,node10,node11,node12,node13"
+```
+(미설정 시 데모 기본값 node01..node08)
+
+## 실행
+전제: `node_report.py` 가 각 노드에서 `python3` 로 실행 가능해야 한다(공유 홈/NFS면 한 경로로 충분, 아니면 노드마다 1회 scp). master/자기 자신은 로컬 실행.
+
+**A) 포털(워크스테이션)에서 직접 — 워크스테이션이 모든 노드로 SSH 가능할 때**
+```bash
+cd hpc-portal
+export HPC_NODES="master,node1,...,node13"
+COLLECTOR=ingest uvicorn main:app --reload --port 8000 &   # 포털
+bash agent/scan_cluster.sh --loop                          # 5초마다 순회 수집 → 로컬 incoming/
+```
+
+**B) master 에서 스캔 → 포털로 scp — 워크스테이션이 노드에 직접 SSH 못 할 때**
+```bash
+# master 에서:
+export HPC_NODES="master,node1,...,node13"
+PORTAL_HOST=10.10.9.101 PORTAL_USER=mac-leesh \
+PORTAL_INCOMING=Develop/Projects/GEOSR_hackton/team-d/hpc-portal/data/incoming \
+bash agent/scan_cluster.sh --loop
+# 포털(워크스테이션)에서는 같은 HPC_NODES 로 ingest 모드만 실행
+```
+
+## 옵션(환경변수)
+- `HPC_NODES` 노드 목록(콤마/공백) · `SSH_USER` 노드 SSH 계정 · `INTERVAL` 주기(기본 5)
+- `AGENT` 노드에서 실행할 node_report.py 경로(기본: 이 스크립트 옆) · `PORTAL_HOST/USER/INCOMING` 설정 시 로컬 대신 scp
+
+> 1회만: `bash agent/scan_cluster.sh` (성공/실패 노드 수 출력 — 연결·경로 점검용)
