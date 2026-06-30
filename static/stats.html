@@ -156,12 +156,12 @@
       setText("kpi-total", Number(s.total ?? 0).toFixed(1));
       setText("kpi-avg",   Number(s.avgPerDay ?? 0).toFixed(1));
       setText("kpi-peak",  s.peakDay ? s.peakDay.slice(5) : "-");
-      setText("kpi-top",   d.byUser.length ? d.byUser[0].user : "-");
+      setText("kpi-top",   d.by_user.length ? d.by_user[0].user : "-");
       setText("kpi-users", s.activeUsers ?? 0);
       setText("kpi-nodes", s.activeNodes ?? 0);
 
-      const nLabels=d.byNode.map(x=>x.node),   nData=d.byNode.map(x=>x.gpu_hours);
-      const uLabels=d.byUser.map(x=>x.user),   uData=d.byUser.map(x=>x.gpu_hours);
+      const nLabels=d.by_node.map(x=>x.node),   nData=d.by_node.map(x=>x.gpu_hours);
+      const uLabels=d.by_user.map(x=>x.user),   uData=d.by_user.map(x=>x.gpu_hours);
       const tLabels=d.trend.map(x=>x.day.slice(5)), tData=d.trend.map(x=>x.gpu_hours);
       const stk = d.stacked || { nodes:[], series:[] };
 

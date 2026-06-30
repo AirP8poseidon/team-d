@@ -1,11 +1,9 @@
-# 시스템 상태 목업 — 한 줄 = 한 노드 (팀원2 소유)
-# 형식: nodeNN temp=<CPU℃> gpu_temp=<GPU℃> mem=<%> disk=<OK|WARN|CRIT> nfs=<OK|DEGRADED|DOWN>
-# 임계(화면 색): temp 55/65 · gpu_temp 70/80 · mem 80/90 · disk OK/WARN/CRIT · nfs OK/DEGRADED/DOWN
-node01 temp=42 gpu_temp=61 mem=55 disk=OK   nfs=OK
-node02 temp=51 gpu_temp=73 mem=68 disk=OK   nfs=DEGRADED
-node03 temp=66 gpu_temp=78 mem=72 disk=WARN nfs=OK
-node04 temp=58 gpu_temp=84 mem=91 disk=OK   nfs=OK
-node05 temp=39 gpu_temp=58 mem=44 disk=OK   nfs=OK
-node06 temp=71 gpu_temp=88 mem=83 disk=CRIT nfs=DOWN
-node07 temp=49 gpu_temp=69 mem=88 disk=OK   nfs=OK
-node08 temp=45 gpu_temp=62 mem=51 disk=OK   nfs=OK
+NODE TEMP DISK_STATUS NFS_STATUS UPDATED_AT
+node01 42 ok ok 2026-06-30T14:00:00
+node02 51 ok degraded 2026-06-30T14:00:00
+node03 66 warning ok 2026-06-30T14:00:00
+node04 58 ok ok 2026-06-30T14:00:00
+node05 39 ok ok 2026-06-30T14:00:00
+node06 71 critical down 2026-06-30T14:00:00
+node07 49 ok ok 2026-06-30T14:00:00
+node08 45 ok ok 2026-06-30T14:00:00

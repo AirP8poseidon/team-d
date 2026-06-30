@@ -6,7 +6,7 @@
 - 팀명: team-d
 - 본인 이름(작성자): 정승명 (jeongseungmyong)
 - 공통과제(우리 팀이 자동화한 반복 수작업): HPC 사용자들이 **노드 사용 현황·서버 환경·노하우를 메신저/구두/개별 문의로 매번 확인·조율**하던 것 → 사내 HPC 통합 포털로 한곳에 모음.
-- 내가 맡은 부분: **팀원2** — **사용량 통계(stats)** + **시스템 상태(system)** 페이지. 노드별 온도·디스크·NFS(+GPU온도·메모리) 점검과 노드별/사용자별 GPU 사용량 집계·추이.
+- 내가 맡은 부분: **팀원2** — **사용량 통계(stats)** + **시스템 상태(system)** 페이지. 노드별 온도·디스크·NFS 점검과 노드별/사용자별 GPU 사용량 집계·추이. (SPEC §6 잠금 스키마 기준)
 - 자유과제(있으면): -
 
 > 제출 시 영문 파일명 `team-d_jeongseungmyong_PROCESS_LOG.md`로 저장(이 파일과 동일 내용). 한글 이름은 위 작성자 정보에만.
@@ -89,62 +89,23 @@
 
 ---
 
-### [#6] 개발 사양서(SPEC) 작성·저장
-- 작성자(팀원): LeeSeongHoo (팀장)
-- 목표: 코딩 착수 전, 블루프린트를 정식 개발 사양서 형식(기능/비기능 요구사항·DB·API 스키마·검수 기준)으로 구조화해 팀 공용 기준 문서 확보.
+### [#6] 팀장 SPEC(잠금 6건) 반영 — 내 구현 정합 업데이트
+- 작성자(팀원): 정승명 (팀원2)
+- 목표: 팀장이 새로 올린 main의 `00_plan/SPEC.md`(잠금 6건)에 맞춰 내 두 페이지·라우터를 정합.
 - 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "지금 프로젝트의 개발 사양서를 작성하고 저장할것."
-- 사용한 기법: (c) 재사용 산출물 — `DEV_BLUEPRINT.md`를 단일 진실 공급원으로 삼아 SPEC 파생
-- 결과: `00_plan/SPEC.md` 작성(12장: 개요·시스템개요·FR/NFR·아키텍처·DB스키마·API사양·UI토큰·통합·빌드계획·검수기준·제약). 제출 자산으로 `submit/assets/SPEC.md` 사본 저장, `submit/evidence/timestamps.txt`에 수정시각 기록.
-- 막힘 → 해결: 루트 `CLAUDE.md`(해커톤 규칙)는 보존해야 해 사양은 별도 문서로 분리. 블루프린트와 충돌 시 블루프린트 우선 명시.
-
----
-
-### [#7] AGENTS.md 존재 확인 및 보존
-- 작성자(팀원): LeeSeongHoo (팀장)
-- 목표: 저장소 기여자 가이드 생성 요청을 처리하되, 기존 `AGENTS.md`가 있으면 수정하지 않는 조건 준수.
-- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "Generate a file named AGENTS.md ... Before writing, check whether AGENTS.md already exists ... If it does, do not overwrite or modify it."
-- 사용한 기법: (b) 도구연동 — `rg --files`, `ls`, `git log`로 파일 존재와 저장소 상태 확인
-- 결과: 루트에 `AGENTS.md`가 이미 있음을 확인해 파일을 생성·수정하지 않음. 기존 가이드는 보존.
-- 막힘 → 해결: 요청 조건과 기존 파일 존재가 충돌 → "수정 금지" 조건을 우선 적용.
-
----
-
-### [#8] 개발 사양서 내용 검토
-- 작성자(팀원): LeeSeongHoo (팀장)
-- 목표: `00_plan/SPEC.md`가 확정 청사진(`DEV_BLUEPRINT.md`)과 충돌하지 않고 구현 착수 기준으로 충분한지 점검.
-- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "지금 개발 사양서 내용 검토해봐"
-- 사용한 기법: (c) 재사용 산출물 — `DEV_BLUEPRINT.md`를 기준 문서로 대조 검토
-- 결과: 전체 구조·역할·DB·API·통합 방향은 적합. 보완 권고: 위젯-모니터링 반영 관계 명확화, HTTP 상태코드 일관화, `id INTEGER PRIMARY KEY AUTOINCREMENT` 등 SQLite DDL 구체화, 샘플 파일 포맷 예시 추가.
-- 막힘 → 해결: -
-
----
-
-### [#9] mpirun 직접 실행 작업 및 SPEC 보완사항 반영
-- 작성자(팀원): LeeSeongHoo (팀장)
-- 목표: `squeue`/PBS 큐에 잡히지 않는 `mpirun` 직접 실행 작업도 포털 설계에 포함하고, 검토 보완사항을 문서에 반영.
-- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "squeue나 pbs를 안쓰고 그냥 mpirun으로 던지는 작업도 있는데, 이런것도 고려가 되는거임?"
-  > "해당 계획 및 보완사항까지 반영해서 수정 및 보완"
-- 사용한 기법: (c) 재사용 산출물 — `DEV_BLUEPRINT.md`와 `SPEC.md` 동시 보정, `submit/assets/` 사본 갱신
-- 결과: `mpirun` 직접 실행 작업은 자동 탐지 대신 `node_usage` 수동 등록(`source=mpirun/manual`)으로 커버한다고 명시. `node_usage.source` 필드 추가, POST 입력 `{source?}` 보완, 성공 HTTP 200 통일, SQLite DDL 구체화, `sample_squeue/sinfo/health` 포맷 예시 추가.
-- 막힘 → 해결: 실서버 `ps`/`nvidia-smi`/PBS 파싱까지 넓히면 구현 리스크가 커짐 → 해커톤 범위는 수동 맥락 등록으로 제한하고 향후 확장으로 분리.
-
----
-
-### [#10] 엔지니어링 검토(/plan-eng-review) — 설계 잠금 6건
-- 작성자(팀원): LeeSeongHoo (팀장)
-- 목표: 코딩 착수 전, 설계 문서(DEV_BLUEPRINT·SPEC)를 아키텍처·코드품질·테스트·성능 관점에서 검토해 결함을 잠그기.
-- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "/plan-eng-review" (검토 대상: 설계 문서)
-- 사용한 기법: (a) 스킬 활용 `/plan-eng-review` 인터랙티브 검토 / (c) 재사용 산출물 SPEC·BLUEPRINT 갱신
-- 결과: 이슈 6건 합의·채택 — **1A** db.py 동시성(WAL+busy_timeout+요청별 연결, `database is locked` 차단), **2A** 멱등 시드/스키마(`--reload` 재부팅 안전), **3A** node_usage 노드별 최신 1건 표시, **4A** `_nav.html` JS 자가주입+pathname active(DRY), **5A** 파서 입력 가드(부팅 무중단), **6A** pytest 최소 세트(파서·멱등시드·node키정합·TestClient 200). 추가 T7(채팅 LIMIT)·T8(노드키 상수화). `SPEC.md §13`·`DEV_BLUEPRINT §14`에 반영, `submit/assets/` 사본 갱신. VERDICT: ENG REVIEW CLEARED, 미해결 0건.
-- 막힘 → 해결: 복잡도 게이트(13파일>8)는 과설계가 아니라 3인 분담 결과로 판단 → 현 범위 유지. 검토 결정 5/6이 팀장 공통 뼈대에 모여, 병렬 착수 전 선반영하기로.
+  > "새로 업로드된 main 브랜치를 업데이트하고 이것을 기반으로 팀원2(정승명)의 사용량 통계/시스템 상태 페이지 구현 업데이트"
+- 사용한 기법: (b) git — origin/main(33643b0) 머지로 SPEC 반영 / (c) 재사용 산출물 — 기존 구현 위에 정합
+- 결과:
+  - **스키마 정합(SPEC §6 잠금)**: `node_health`를 `node/temp/disk_status/nfs_status/updated_at`로 축소(내가 확장했던 `gpu_temp`·`mem` 제거). `usage_log` NOT NULL 명시.
+  - **데이터 포맷(SPEC §6.2)**: `sample_health.txt`를 헤더+위치기반 `NODE TEMP DISK_STATUS NFS_STATUS UPDATED_AT`로 교체, 상태값 소문자(`ok/warning/critical`·`ok/degraded/down`).
+  - **API 키(SPEC §7.4)**: `GET /api/stats/usage` 응답 키를 `by_node`/`by_user`로 정정(확장 `summary`/`stacked`는 FR-S3로 유지). `GET /api/system/health`는 잠금 5필드만.
+  - **잠금 반영**: 1A `get_db` 동시성표준(check_same_thread=False+WAL+busy_timeout, 통합 시 팀장 `db.py` 자동 사용) / 2A 멱등 초기화 / 5A 파서 입력 가드(헤더·빈줄·칸수·int try/except) / 6A **pytest 최소 세트** `tests/test_team2.py`(파서 정상·깨진행, 멱등 시드 2회, node01~08 정합, TestClient 200) — **4 passed**.
+  - `system.html`: gpu/메모리 행 제거, 상태 칩 소문자 매핑, 추이 차트를 CPU 온도(평균·최고)로. 배너·필터 유지. `stats.html`: `by_node/by_user` 반영.
+  - 검증: pytest 4건 통과 + Edge 헤드리스로 두 페이지 SPEC 정합 렌더 확인.
+- 막힘 → 해결: ① 개인 로그가 main 머지로 팀장 항목과 섞임 → 내 항목만 남기고 정리. ② 스크래치 검증 하니스의 옛 `byNode` 진단 코드가 import 실패 유발 → 하니스를 순수 app 모듈로 교체.
 
 ---
 
 ## 마무리 요약 (1~2줄)
-- 가장 효과적이었던 에이전트 활용법: **계획(체크목록/방법/시각화)을 먼저 확정**하고 기존 목업의 디자인 자산을 재사용해, 소유 파일만으로 충돌 없이 두 페이지를 빠르게 구현·단독 검증.
-- 다른 팀원이 그대로 따라 하려면 필요한 것: DEV_BLUEPRINT의 소유 파일 경계 + 라우터의 "자체 테이블/시드 + 팀장 db.py 자동 폴백" 패턴(통합 전에도 `/docs` 단독 동작).
+- 가장 효과적이었던 에이전트 활용법: **계획(체크목록/방법/시각화) 선확정 → 구현 → 팀 SPEC(잠금) 반영 정합**까지, 소유 파일만으로 충돌 없이 빠르게 구현·단독 검증(pytest+헤드리스 스크린샷).
+- 다른 팀원이 그대로 따라 하려면 필요한 것: SPEC 소유 파일 경계 + 라우터의 "자체 테이블/시드 + 팀장 `get_db` 자동 폴백" 패턴(통합 전에도 `/docs` 단독 동작) + 6A pytest 정합 테스트.
