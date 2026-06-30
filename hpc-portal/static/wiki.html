@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>정보공유 · 사내 HPC 포털</title>
+<title>정보공유 · GeoSR HPC 통합 포털</title>
 <link rel="stylesheet" href="/static/common.css" />
+<link rel="stylesheet" href="/static/theme.css" />
 <style>
   /* 공유 토큰(--bg/--ink/--blue 등)은 common.css(SPEC §8) 소유. 여기선 페이지 전용 토큰만. */
   :root{
@@ -14,8 +15,8 @@
   }
   body{
     background:
-      radial-gradient(1100px 480px at 88% -10%, rgba(29,78,216,.07), transparent 60%),
-      radial-gradient(900px 420px at 0% 0%, rgba(4,120,135,.05), transparent 55%),
+      radial-gradient(1100px 480px at 88% -10%, rgba(22,179,100,.06), transparent 60%),
+      radial-gradient(900px 420px at 0% 0%, rgba(14,159,84,.05), transparent 55%),
       var(--bg);
     line-height:1.6;
   }
@@ -25,13 +26,17 @@
   /* 히어로 헤더 */
   .hero{
     position:relative; overflow:hidden; border-radius:20px; padding:32px 32px 28px; margin-bottom:30px;
-    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 56%,#1d4ed8 100%);
-    color:#fff; box-shadow:0 14px 34px rgba(15,23,42,.22);
+    background:linear-gradient(135deg, rgba(22,179,100,.82) 0%, rgba(14,95,56,.88) 100%);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border:1px solid rgba(255,255,255,.22);
+    color:#fff; box-shadow:0 8px 30px rgba(14,95,56,.20), inset 0 1px 0 rgba(255,255,255,.30);
   }
-  .hero:before{ content:""; position:absolute; right:-70px; top:-80px; width:240px; height:240px; border-radius:50%; background:rgba(255,255,255,.06); }
-  .hero:after{ content:""; position:absolute; right:60px; bottom:-90px; width:170px; height:170px; border-radius:50%; background:rgba(255,255,255,.05); }
+  /* macOS 유리 하이라이트 (홈과 동일, 우측 원형 무늬 제거) */
+  .hero:before{ content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 55%); }
   .hero h1{ position:relative; margin:0 0 8px; font-size:28px; font-weight:750; letter-spacing:-.4px; color:#fff; }
-  .hero p{ position:relative; margin:0; color:#cbd5e1; font-size:14.5px; max-width:640px; }
+  .hero p{ position:relative; margin:0; color:#eafff3; font-size:14.5px; max-width:640px; }
   .hero .pills{ position:relative; margin-top:18px; display:flex; gap:8px; flex-wrap:wrap; }
   .hero .pill{
     background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#eaf0ff;
@@ -43,7 +48,7 @@
   h2.section .ico{
     width:32px; height:32px; border-radius:10px; flex:none;
     display:inline-flex; align-items:center; justify-content:center; font-size:16px;
-    background:#e0e7ff; color:var(--blue);
+    background:var(--green-soft); color:var(--green-deep);
   }
 
   /* 페이지 전용 카드(common.css .card 위에 그림자·라운드 보강) */
@@ -53,11 +58,11 @@
   }
   .servers{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
   .server-card{ position:relative; overflow:hidden; padding-top:20px; transition:transform .16s, box-shadow .16s; }
-  .server-card:before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--blue); }
-  .server-card.t-gpu:before{ background:linear-gradient(90deg,var(--green),#10b981); }
-  .server-card.t-cpu:before{ background:linear-gradient(90deg,var(--blue),#3b82f6); }
-  .server-card.t-fat:before{ background:linear-gradient(90deg,var(--orange),#f59e0b); }
-  .server-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:#c7d2fe; }
+  .server-card:before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--green); }
+  .server-card.t-gpu:before{ background:linear-gradient(90deg,#28d17c,#0e9f54); }
+  .server-card.t-cpu:before{ background:linear-gradient(90deg,#5ac389,#16b364); }
+  .server-card.t-fat:before{ background:linear-gradient(90deg,var(--yellow),#f59e0b); }
+  .server-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-h); }
   .server-card h3{ margin:0 0 4px; font-size:17px; display:flex; align-items:center; gap:8px; }
   .badge{ font-size:11px; padding:2px 9px; border-radius:999px; color:#fff; font-weight:600; }
   .b-gpu{ background:var(--green); }
@@ -67,7 +72,7 @@
   dl.spec{ margin:0; display:grid; grid-template-columns:62px 1fr; gap:6px 10px; font-size:13.5px; }
   dl.spec dt{ color:var(--muted); font-weight:600; }
   dl.spec dd{ margin:0; }
-  code.inline{ background:#eef2f9; padding:1px 6px; border-radius:5px; font-size:12.5px; color:var(--navy); }
+  code.inline{ background:#eef2f0; padding:1px 6px; border-radius:5px; font-size:12.5px; color:var(--green-deep); }
   .mods span{
     display:inline-block; background:#eef2f9; color:var(--navy); border:1px solid var(--line);
     border-radius:6px; padding:2px 8px; font-size:12px; margin:3px 4px 0 0;
@@ -78,9 +83,9 @@
   ol.steps > li:before{
     counter-increment:step; content:counter(step);
     position:absolute; left:0; top:0; width:30px; height:30px; border-radius:50%;
-    background:linear-gradient(140deg,#1d4ed8,#0f172a); color:#fff; font-weight:700;
+    background:linear-gradient(140deg,#28d17c,#0e9f54); color:#fff; font-weight:700;
     display:flex; align-items:center; justify-content:center; font-size:14px;
-    box-shadow:0 4px 10px rgba(29,78,216,.32);
+    box-shadow:0 4px 10px rgba(14,159,84,.32);
   }
   ol.steps > li:not(:last-child):after{
     content:""; position:absolute; left:14px; top:32px; bottom:2px; width:2px; background:var(--line);
@@ -127,7 +132,7 @@
     content:""; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:3px;
     background:transparent; transition:.12s;
   }
-  ul.posts li:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(15,23,42,.08); border-color:#c7d2fe; }
+  ul.posts li:hover{ transform:translateY(-2px); box-shadow:0 8px 22px rgba(15,23,42,.08); border-color:#bfe3cf; }
   ul.posts li:hover:before{ background:var(--blue); }
   ul.posts .ptitle{ font-weight:600; font-size:15px; color:var(--navy); }
   ul.posts .meta{ color:var(--muted); font-size:12px; margin:2px 0 6px; }
@@ -558,6 +563,6 @@ Submitted batch job 184302</pre>
 
   <!-- 공통 네비 자가주입(4A) + 실시간 채팅 플로팅 위젯(한 줄 로드) -->
   <script src="/static/include.js"></script>
-  <script src="/static/chat-widget.js"></script>
+  <script src="/static/chat-widget.js?v=glass1"></script>
 </body>
 </html>

@@ -1,0 +1,172 @@
+/* ============================================================================
+ * theme.css — HPC 포털 디자인 토큰 (단일 소스) · 샌드박스 리스타일
+ * common.css 다음에 link 되어 시각 표현만 덮어쓴다(기능·구조 불변).
+ * 톤: 그린 포인트 + 좌측 사이드바 + 테두리 없는 그림자 카드.
+ * ==========================================================================*/
+
+:root{
+  /* 색 */
+  --green:#16b364;        /* 메인 포인트 */
+  --green-deep:#0e9f54;   /* 강조 텍스트 */
+  --green-soft:#e8f7ef;   /* 연초록 타일 / 활성 배경 */
+  --yellow:#f5a524; --yellow-soft:#fef4e2;
+  --red:#ef4444;    --red-soft:#fdebeb;
+
+  --ink:#1f2a37;          /* 본문 */
+  --ink-2:#8a94a3;        /* 보조 */
+  --ink-3:#b6bdc7;        /* 더 옅은 보조 */
+
+  --bg:#f6f8f7;           /* 페이지 배경 — 순백 금지 */
+  --card:#ffffff;
+  --line:#eef1f0;
+
+  --shadow:0 4px 18px rgba(31,42,55,.05);
+  --shadow-h:0 10px 30px rgba(31,42,55,.10);
+
+  --radius:20px;
+  --radius-sm:12px;
+
+  /* ── common.css 의 레거시 변수 재정의(인라인 var() 참조를 그린 톤으로 끌어온다) ── */
+  --paper:#ffffff;
+  --muted:#8a94a3;
+  --blue:#16b364;         /* 기존 '블루 포인트' → 그린으로 통일 */
+  --navy:#1f2937;         /* 코드블록/짙은 텍스트용 다크(스펙 §4 코드 배경) */
+  --orange:#f5a524;
+  --line-strong:#e3e8e6;
+
+  --side-w:236px;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+  letter-spacing:-.01em; -webkit-font-smoothing:antialiased; line-height:1.5;
+  padding-left:var(--side-w);          /* 고정 사이드바 폭만큼 본문을 우측으로 */
+}
+:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+
+/* ── 좌측 사이드바 (include.js 가 #nav-placeholder 에 .side 주입) ───────────── */
+.side{
+  position:fixed; left:0; top:0; width:var(--side-w); height:100vh;
+  background:var(--card); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; padding:18px 14px; z-index:50;
+}
+.side .brand{
+  display:flex; align-items:center; gap:10px; text-decoration:none;
+  color:var(--ink); font-weight:700; font-size:15px; padding:4px 6px 14px;
+}
+.side .brand .brand-mark{
+  width:30px; height:30px; border-radius:9px; flex:none;
+  background:linear-gradient(140deg,#28d17c,#0e9f54);
+  box-shadow:0 4px 10px rgba(14,159,84,.28);
+}
+.side .ws{
+  background:#f4f6f5; border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:9px 11px; font-size:12.5px; color:var(--ink-2); margin-bottom:16px;
+  display:flex; align-items:center; gap:8px;
+}
+.side .ws b{ color:var(--ink); font-weight:650; }
+.side .links{ display:flex; flex-direction:column; gap:3px; }
+.side .links a{
+  display:flex; align-items:center; gap:11px; text-decoration:none;
+  color:var(--ink-2); font-size:13.5px; font-weight:550;
+  padding:9px 12px; border-radius:var(--radius-sm); transition:background .14s,color .14s;
+}
+.side .links a .ic{ width:17px; text-align:center; font-size:15px; opacity:.85; }
+.side .links a:hover{ background:#f1f4f3; color:var(--ink); }
+.side .links a.active{ background:var(--green-soft); color:var(--green-deep); font-weight:700; }
+.side .links a.active .ic{ opacity:1; }
+.side .side-logo{ margin-top:auto; padding:14px 8px 4px; border-top:1px solid var(--line); }
+.side .side-logo img{ display:block; width:100%; max-width:150px; height:auto; margin:0 auto; opacity:.92; }
+.side .side-logo.no-logo{ border-top:none; padding:0; }
+.side .side-foot{ font-size:11px; color:var(--ink-3); padding:8px 8px 2px; }
+
+/* 옛 상단 네비(.nav)가 혹시 주입돼도 숨김 — 사이드바로 일원화 */
+.nav{ display:none !important; }
+
+/* ── 공통 카드: 테두리 제거, 그림자로 띄우고 hover 시 살짝 떠오름 ───────────── */
+.card,
+.kpi, .home-card, .node, .reg-panel, .chart-box, .panel, .server-card{
+  background:var(--card); border:none !important; border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s;
+}
+.card:hover, .home-card:hover, .node:hover, .server-card:hover, .chart-box:hover{
+  transform:translateY(-3px); box-shadow:var(--shadow-h);
+}
+.kpi{ border-radius:var(--radius-sm); }
+.panel{ overflow:hidden; }
+
+/* ── 파스텔 아이콘 타일 ───────────────────────────────────────────────────── */
+.tile{width:42px;height:42px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;font-size:19px;}
+.tile.g{background:var(--green-soft);color:var(--green-deep);}
+.tile.y{background:var(--yellow-soft);color:var(--yellow);}
+.tile.r{background:var(--red-soft);color:var(--red);}
+
+/* ── 상태 배지: 솔리드 → 소프트 알약 ─────────────────────────────────────── */
+.badge{ font-weight:650 !important; border-radius:99px !important; }
+.badge.run, .st.run{
+  background:var(--green-soft) !important; color:var(--green-deep) !important;
+}
+.badge.idle{ background:#eef1f0 !important; color:var(--ink-2) !important; }
+.badge.maint, .st.wait{
+  background:var(--yellow-soft) !important; color:#b9761a !important;
+}
+
+/* ── 캡슐형 막대 ─────────────────────────────────────────────────────────── */
+.bar{ background:var(--line) !important; border-radius:99px !important; height:7px !important; }
+.bar > span, .bar > i{ border-radius:99px !important; }
+.fill-cpu{ background:#5ac389 !important; }   /* CPU: 옅은 초록 */
+.fill-gpu{ background:var(--green) !important; }
+.fill-mem{ background:var(--yellow) !important; }
+
+/* ── 버튼 / 태그 ─────────────────────────────────────────────────────────── */
+.btn, .reg-btn{
+  border:0; border-radius:var(--radius-sm); padding:9px 16px;
+  font-weight:650; font-size:13px; cursor:pointer;
+  color:#fff; background:var(--green); transition:filter .15s, transform .1s;
+}
+.btn:hover, .reg-btn:hover{ filter:brightness(1.05); background:var(--green); }
+.btn:active, .reg-btn:active{ transform:scale(.98); }
+.btn.ghost{ background:#eef2f0 !important; color:var(--ink) !important; border:none !important; }
+.btn.ghost:hover{ filter:none; background:#e6ebe9 !important; }
+.sort-toggle{ border:1px solid var(--line) !important; border-radius:var(--radius-sm) !important; color:var(--ink) !important; }
+.sort-toggle:hover{ border-color:var(--green) !important; color:var(--green-deep) !important; }
+
+/* 입력창 공통 포커스 — 그린 링 */
+input[type=text], input[type=search], textarea, select{
+  border-radius:var(--radius-sm) !important; border:1px solid var(--line) !important;
+}
+input:focus, textarea:focus, select:focus{
+  outline:none; border-color:var(--green) !important;
+  box-shadow:0 0 0 3px rgba(22,179,100,.15) !important;
+}
+
+/* 칩 / 태그 — active 시 그린 */
+.chip.active{ background:var(--green) !important; border-color:var(--green) !important; color:#fff !important; }
+.chip:hover{ border-color:var(--green) !important; color:var(--green-deep) !important; }
+
+/* helpful 버튼 그린 유지 */
+.helpful-btn{ color:var(--green-deep) !important; }
+.helpful-btn:hover{ border-color:var(--green) !important; background:var(--green-soft) !important; }
+
+/* accent 텍스트 */
+.accent, .kpi .value.blue{ color:var(--green-deep) !important; }
+
+/* ── 반응형: 좁은 화면에서 사이드바 접기 ─────────────────────────────────── */
+@media (max-width:760px){
+  body{ padding-left:0; }
+  .side{ transform:translateX(-100%); transition:transform .2s; }
+  .side.open{ transform:translateX(0); }
+  .side-toggle{ display:flex !important; }
+}
+/* 모바일 햄버거 토글 버튼(평소 숨김) */
+.side-toggle{
+  display:none; position:fixed; left:14px; top:14px; z-index:60;
+  width:40px; height:40px; border-radius:11px; border:none; cursor:pointer;
+  background:var(--card); box-shadow:var(--shadow); color:var(--ink);
+  align-items:center; justify-content:center; font-size:18px;
+}

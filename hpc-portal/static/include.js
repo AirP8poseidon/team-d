@@ -16,6 +16,25 @@
     }
   }
 
+  function addMobileToggle(placeholder) {
+    // 모바일(≤760px)에서 사이드바를 다시 여는 햄버거 버튼. CSS(.side-toggle)는 theme.css 소유.
+    if (document.querySelector(".side-toggle")) return;
+    var side = placeholder.querySelector(".side");
+    if (!side) return;
+    var tog = document.createElement("button");
+    tog.className = "side-toggle";
+    tog.setAttribute("aria-label", "메뉴 열기");
+    tog.innerHTML = "☰";
+    tog.addEventListener("click", function () { side.classList.toggle("open"); });
+    // 사이드바 밖을 누르면 닫힘
+    document.addEventListener("click", function (e) {
+      if (side.classList.contains("open") && !side.contains(e.target) && e.target !== tog) {
+        side.classList.remove("open");
+      }
+    });
+    document.body.appendChild(tog);
+  }
+
   function inject() {
     var placeholder = document.getElementById("nav-placeholder");
     if (!placeholder) return;
@@ -24,6 +43,7 @@
       .then(function (html) {
         placeholder.innerHTML = html;
         markActive(placeholder);
+        addMobileToggle(placeholder);
       })
       .catch(function (e) { console.error("nav 주입 실패", e); });
   }

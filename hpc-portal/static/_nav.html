@@ -1,11 +1,20 @@
-<!-- 공통 상단 네비 스니펫 (팀장 소유). include.js 가 fetch 로 주입한다. -->
-<nav class="nav">
-  <a class="brand" href="/static/index.html">사내 HPC 포털</a>
-  <div class="links">
-    <a href="/static/index.html" data-page="index">홈</a>
-    <a href="/static/monitoring.html" data-page="monitoring">모니터링</a>
-    <a href="/static/wiki.html" data-page="wiki">정보공유</a>
-    <a href="/static/stats.html" data-page="stats">사용량 통계</a>
-    <a href="/static/system.html" data-page="system">시스템 상태</a>
+<!-- 좌측 사이드바 네비 (샌드박스 리스타일). include.js 가 fetch 로 주입.
+     .links a[data-page] 구조는 유지 → include.js 의 active 표시 로직 그대로 동작. -->
+<aside class="side">
+  <a class="brand" href="/static/index.html">
+    <span class="brand-mark"></span> GeoSR HPC 통합 포털
+  </a>
+  <div class="ws"><b>GPU Cluster</b> · hpc.corp.local</div>
+  <nav class="links">
+    <a href="/static/index.html" data-page="index"><span class="ic">▦</span> 홈</a>
+    <a href="/static/monitoring.html" data-page="monitoring"><span class="ic">▤</span> 모니터링</a>
+    <a href="/static/wiki.html" data-page="wiki"><span class="ic">▣</span> 정보공유</a>
+    <a href="/static/stats.html" data-page="stats"><span class="ic">▥</span> 사용량 통계</a>
+    <a href="/static/system.html" data-page="system"><span class="ic">▧</span> 시스템 상태</a>
+  </nav>
+  <div class="side-logo">
+    <img src="/static/geosr-logo.png" alt="GeoSR · 지오시스템리서치"
+         onerror="this.style.display='none';this.parentNode.classList.add('no-logo');" />
   </div>
-</nav>
+  <div class="side-foot">© 2026 HPC 포털 · 데모</div>
+</aside>
