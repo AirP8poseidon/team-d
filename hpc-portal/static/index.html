@@ -1,32 +1,131 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>사내 HPC 포털 — 홈</title>
-  <link rel="stylesheet" href="/static/common.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사내 HPC 포털 - 홈</title>
+<link rel="stylesheet" href="/static/common.css" />
+<style>
+  /* 랜딩 전용 스타일 (목업 디자인 유지 — 네비/토큰은 common.css) */
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 22px 60px;}
+  .hero{
+    background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 100%);
+    color:#fff;border-radius:18px;padding:46px 38px;margin-bottom:28px;
+    box-shadow:0 8px 24px rgba(15,23,42,.18);
+  }
+  .hero h1{margin:0 0 12px;font-size:34px;color:#fff;}
+  .hero p{margin:0;font-size:17px;color:#dbeafe;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;}
+  .kpi{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;box-shadow:0 2px 8px rgba(15,23,42,.05);
+  }
+  .kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .kpi .value{font-size:28px;font-weight:700;}
+  .kpi .value.green{color:var(--green);}
+  .kpi .value.orange{color:var(--orange);}
+  .kpi .value.blue{color:var(--blue);}
+  .sec-title{font-size:20px;font-weight:700;margin:0 0 16px;}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  .home-card{
+    background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    padding:24px;box-shadow:0 2px 10px rgba(15,23,42,.06);
+    display:flex;flex-direction:column;
+  }
+  .home-card .ico{font-size:30px;margin-bottom:10px;}
+  .home-card h3{margin:0 0 8px;font-size:18px;}
+  .home-card p{margin:0 0 18px;color:var(--muted);font-size:14px;flex:1;}
+  .btn{
+    display:inline-block;text-align:center;background:var(--blue);color:#fff;
+    padding:10px 16px;border-radius:9px;font-size:14px;font-weight:600;
+    text-decoration:none;transition:.15s;
+  }
+  .btn:hover{background:#163fb8;}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:40px;}
+  @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:860px){
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .cards{grid-template-columns:1fr;}
+    .hero h1{font-size:26px;}
+  }
+</style>
 </head>
 <body>
-  <!-- 공통 네비 (include.js 가 _nav.html 주입) -->
+  <!-- 공통 네비 (include.js 가 _nav.html 주입, 결정 4A) -->
   <div id="nav-placeholder"></div>
 
-  <div class="container">
-    <h1>사내 HPC 통합 포털</h1>
-    <p class="subtitle">SLURM 자원 숫자 위에 사람의 맥락 + 실시간 소통 + 운영 가시성을 더합니다.</p>
+  <div class="wrap">
+    <section class="hero">
+      <h1>사내 HPC 포털</h1>
+      <p>노드 모니터링 · 환경 공유 · 실시간 소통을 한 곳에서.</p>
+    </section>
 
-    <div class="card">
-      <p>이 포털은 다음을 한 화면에 모읍니다.</p>
-      <ul>
-        <li><a class="accent" href="/static/monitoring.html">모니터링</a> — 노드 CPU/GPU/메모리 + 현재 작업 맥락(누가·왜)</li>
-        <li><a class="accent" href="/static/wiki.html">정보공유</a> — 서버 환경 카드 · 노하우 게시판</li>
-        <li><a class="accent" href="/static/stats.html">사용량 통계</a> — 노드별/사용자별 집계·추이</li>
-        <li><a class="accent" href="/static/system.html">시스템 상태</a> — 온도·디스크·NFS</li>
-      </ul>
-      <p class="subtitle">실시간 채팅 위젯은 위 4개 페이지에서 사용할 수 있습니다. (홈 제외)</p>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">전체 노드 수</div><div class="value" id="k-total">--</div></div>
+      <div class="kpi"><div class="label">가동 중 노드</div><div class="value green" id="k-run">--</div></div>
+      <div class="kpi"><div class="label">대기 중 Job</div><div class="value orange" id="k-wait">--</div></div>
+      <div class="kpi"><div class="label">평균 GPU 사용률</div><div class="value blue" id="k-gpu">--%</div></div>
     </div>
+
+    <h2 class="sec-title">바로가기</h2>
+    <div class="cards">
+      <div class="home-card">
+        <div class="ico">📊</div>
+        <h3>모니터링</h3>
+        <p>노드 상태, CPU/GPU/메모리 사용률과 작업 큐, 현재 작업 맥락(누가·왜)을 한눈에 확인하세요.</p>
+        <a class="btn" href="/static/monitoring.html">모니터링 열기</a>
+      </div>
+      <div class="home-card">
+        <div class="ico">📚</div>
+        <h3>정보공유</h3>
+        <p>실행 환경, 모듈 설정, 자주 쓰는 스크립트와 노하우를 팀과 함께 위키로 정리합니다.</p>
+        <a class="btn" href="/static/wiki.html">정보공유 열기</a>
+      </div>
+      <div class="home-card">
+        <div class="ico">📈</div>
+        <h3>사용량 통계</h3>
+        <p>노드별·사용자별 GPU 사용량 집계와 추이를 차트로 살펴봅니다.</p>
+        <a class="btn" href="/static/stats.html">사용량 통계 열기</a>
+      </div>
+      <div class="home-card">
+        <div class="ico">🖥️</div>
+        <h3>시스템 상태</h3>
+        <p>노드 온도·디스크·NFS 등 운영 가시성 지표를 한 화면에서 점검합니다.</p>
+        <a class="btn" href="/static/system.html">시스템 상태 열기</a>
+      </div>
+    </div>
+
+    <footer>© 2026 사내 HPC 포털 · 해커톤 데모 (목업 데이터)</footer>
   </div>
 
   <!-- 랜딩은 채팅 위젯 미포함 (FR-G2) -->
   <script src="/static/include.js"></script>
+  <script>
+    // 랜딩 KPI 도 실제 API 로 채운다 (B안: 가짜 숫자 제거). 실패해도 화면은 유지.
+    function normNodeStatus(s){
+      var map={alloc:'run',allocated:'run',running:'run',mix:'run',mixed:'run',
+               idle:'idle',down:'maint',drain:'maint',draining:'maint',maint:'maint',
+               fail:'maint',failed:'maint'};
+      return map[String(s||'').toLowerCase().trim()]||'idle';
+    }
+    (async function(){
+      try{
+        var [nodesRes, jobsRes] = await Promise.all([
+          fetch('/api/monitoring/nodes'), fetch('/api/monitoring/jobs')
+        ]);
+        var nodes = await nodesRes.json();
+        var jobs = await jobsRes.json();
+        var running = nodes.filter(function(n){return normNodeStatus(n.status)==='run';});
+        var waiting = jobs.filter(function(j){return String(j.status||'').toUpperCase()!=='RUNNING';});
+        var avgGpu = running.length
+          ? Math.round(running.reduce(function(s,n){return s+(Number(n.gpu)||0);},0)/running.length)
+          : 0;
+        document.getElementById('k-total').textContent = nodes.length;
+        document.getElementById('k-run').textContent = running.length;
+        document.getElementById('k-wait').textContent = waiting.length;
+        document.getElementById('k-gpu').textContent = avgGpu + '%';
+      }catch(e){ console.error('KPI 로드 실패', e); }
+    })();
+  </script>
 </body>
 </html>
