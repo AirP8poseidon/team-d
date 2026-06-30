@@ -250,6 +250,18 @@
 
 ---
 
+### [#21] 팀원 브랜치 통합 — 완성본 빌드(5페이지+채팅) + 사이드바 전역 통일
+- 작성자(팀원): LeeSeongHoo (팀장)
+- 목표: 팀원 작업이 올라온 개인 브랜치(kimminju·jeongseungmyong)를 받아 충돌 없이 합쳐 동작하는 완성본을 만들고, 네비 디자인 충돌을 해소.
+- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
+  > "팀원들의 작업도 완료되서 각 팀원 이름의 브랜치로 올라왔음 이거 풀해서 완성본 만들것"
+  > (네비 통일 결정) "사이드바로 전역 통일 (추천)"
+- 사용한 기법: (a) 역할분담 결과 병합, (b) git 브랜치 통합 + browse.exe 렌더 검증
+- 결과: 경계 점검 — **코드는 소유분리로 충돌 0**(kim=wiki/chat+위젯, jeong=stats/system+health). 단 ① kim이 공통 `_nav.html`을 좌측 사이드바로 재디자인(theme.css) + include.js 모바일토글 추가 ② 두 팀원이 공유 `PROCESS_LOG.md`에 각자 로그를 덮어씀. 처리: 사이드바 디자인을 팀 표준으로 채택 → 나머지 4페이지(monitoring/stats/system/index)에 `theme.css` 한 줄 추가, 사이드바 라벨 GPU→CPU 정정. 개인 로그는 **이름별 파일로 분리**(`team-d_kimminju_…`·`team-d_jeongseungmyong_…` 생성, 내 `team-d_LeeSeongHoo_…`·공유 PROCESS_LOG는 보존). **검증**: pytest 13건 통과(팀원 테스트 포함), 5페이지 전부 좌측 고정 사이드바로 렌더(browse.exe 스크린샷), `/api/wiki/posts`·`/monitoring/nodes`·`/system/health`·`/stats/usage` 200. 실데모(ingest) 기준 monitoring 14노드 라이브.
+- 막힘 → 해결: ① 사이드바는 theme.css 필요한데 4페이지가 common.css만 → theme.css 링크 주입으로 전역 통일. ② 팀원 PROCESS_LOG 덮어쓰기 → 이름별 분리로 3인 로그 모두 보존(전원참여 증빙). 잔여(비치명): system의 'node01~08' 헤더 텍스트·mock 네트워크 패널, stats 노드명 혼재 → 팀원 자료 다듬기 후속.
+
+---
+
 ## 마무리 요약 (1~2줄)
 - 가장 효과적이었던 에이전트 활용법: **인터뷰로 모호한 의도를 청사진 1문서로 수렴** → 그 문서에서 팀원별 핸드오버·킥오프 프롬프트를 파생해 충돌 0으로 병렬 착수.
 - 다른 팀이 그대로 따라 하려면 필요한 것: `DEV_BLUEPRINT.md` 양식(역할·소유파일·DB·API·통합 접점·킥오프 프롬프트) + "공통 파일은 한 명만 수정" 규칙.

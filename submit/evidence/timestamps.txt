@@ -79,3 +79,7 @@
 # 2026-06-30 20:16:24 팀원 배포용 통합 가이드 (#20)
 2026-06-30 20:16:24 TEAM_SYNC.md  (실서버 반영 필수 검토)
 2026-06-30 20:16:24 submit/assets/handover/README.md·member1·member2  (TEAM_SYNC 우선 배너+정정)
+
+# 2026-06-30 20:55:01 팀원 브랜치 통합 완성본 (#21)
+2026-06-30 20:55:01 hpc-portal 정적 페이지 사이드바 전역 통일 + 팀원 페이지 통합
+2026-06-30 20:55:01 submit 개인 로그 3인 분리 보존(kimminju·jeongseungmyong·LeeSeongHoo)

@@ -1,9 +1,9 @@
 NODE TEMP DISK_STATUS NFS_STATUS UPDATED_AT
 node01 42 ok ok 2026-06-30T14:00:00
-node02 38 ok ok 2026-06-30T14:00:00
-node03 65 ok ok 2026-06-30T14:00:00
-node04 71 warning ok 2026-06-30T14:00:00
-node05 68 ok ok 2026-06-30T14:00:00
-node06 55 ok warning 2026-06-30T14:00:00
-node07 82 warning critical 2026-06-30T14:00:00
-node08 35 ok ok 2026-06-30T14:00:00
+node02 51 ok warning 2026-06-30T14:00:00
+node03 66 warning ok 2026-06-30T14:00:00
+node04 58 ok ok 2026-06-30T14:00:00
+node05 39 ok ok 2026-06-30T14:00:00
+node06 71 critical critical 2026-06-30T14:00:00
+node07 49 ok ok 2026-06-30T14:00:00
+node08 45 ok ok 2026-06-30T14:00:00

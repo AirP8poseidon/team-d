@@ -12,3 +12,5 @@ __pycache__/
 
 # push 런타임 데이터 (폴더는 .gitkeep 로 유지)
 data/incoming/*.json
+
+demo.db*
