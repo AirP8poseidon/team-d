@@ -3,12 +3,14 @@
 SPEC §7.4:
   GET /api/stats/usage     -> {by_node, by_user, trend, summary}
 확장(FR-S3):
-  GET /api/stats/capacity  -> {references:[{key,label,cutoff,users:[{user,gpu_hours}]}]}
-                              사용자별 누적 용량(GPU-hours)을 기준 시점별로
+  GET /api/stats/capacity  -> {references:[{key,label,cutoff,users:[{user,used_gb}]}]}
+                              사용자별 '스토리지 사용량(GB)'을 기준 시점별 스냅샷으로
                               (오늘 00시 / 3일전 / 1주일전 / 현재시각).
 
 usage_log 는 db.py seed_if_empty() 가 기본 시드한다. 추이를 '1주일 이전부터' 보이도록
 최근 8일 범위에서 비어 있는 날만 멱등 보충(_ensure_week_usage) — usage_log 는 팀원2 소유.
+스토리지 용량은 GPU-hours 와 무관한 점유 용량이라 자기완결 user_storage 테이블로 분리
+(db.py 미수정, 노드/온도와 함께 '운영 가시성' 지표).
 """
 from __future__ import annotations
 
@@ -72,14 +74,44 @@ def get_usage(db=Depends(db_dep)):
     return {"by_node": by_node, "by_user": by_user, "trend": trend, "summary": summary}
 
 
+# 사용자별 기준 스토리지 점유 용량(GB) — 결정적. 스토리지는 시간이 갈수록 누적 증가.
+_STORAGE_BASE = {"kim": 820.0, "lee": 540.0, "park": 1180.0, "choi": 360.0}
+
+
+def _ensure_user_storage(db, days=7):
+    """사용자별 스토리지 사용량(GB) 일별 스냅샷을 멱등 보충(2A). 자기완결 테이블(db.py 미수정).
+
+    스냅샷(누적합 아님) = 그 날의 사용자별 디스크 점유 용량. 과거→현재로 단조 증가 경향.
+    날짜·사용자 기반 결정적 시드라 재시작해도 동일.
+    """
+    db.execute(
+        "CREATE TABLE IF NOT EXISTS user_storage("
+        "user TEXT NOT NULL, day TEXT NOT NULL, used_gb REAL NOT NULL, "
+        "PRIMARY KEY(user, day))"
+    )
+    today = date.today()
+    for i in range(days, -1, -1):
+        day = (today - timedelta(days=i)).isoformat()
+        if db.execute("SELECT COUNT(*) AS c FROM user_storage WHERE day=?", (day,)).fetchone()["c"] > 0:
+            continue
+        elapsed = days - i  # 0(가장 과거)..days(오늘)
+        for idx, u in enumerate(USERS):
+            rng = random.Random(int(day.replace("-", "")) + idx * 131)  # 날짜·사용자 결정적
+            val = _STORAGE_BASE.get(u, 400.0) + elapsed * rng.uniform(3.0, 12.0) + rng.uniform(-2.0, 2.0)
+            db.execute(
+                "INSERT INTO user_storage(user, day, used_gb) VALUES(?,?,?)",
+                (u, day, round(max(0.0, val), 1)),
+            )
+    db.commit()
+
+
 @router.get("/capacity")
 def get_capacity(db=Depends(db_dep)):
-    """사용자별 누적 용량(GPU-hours)을 기준 시점별로 — 오늘 00시/3일전/1주일전/현재시각.
+    """사용자별 스토리지 사용량(GB)을 기준 시점별 스냅샷으로 — 1주일전/3일전/오늘 00시/현재시각.
 
-    누적 = 해당 기준일까지(day <= cutoff)의 사용자별 gpu_hours 합.
-    '오늘 00시' = 어제까지 누적, '현재시각' = 오늘 포함.
+    누적합이 아니라 그 시점의 디스크 점유 용량(GB). '오늘 00시'=어제 스냅샷, '현재시각'=오늘.
     """
-    _ensure_week_usage(db)
+    _ensure_user_storage(db)
     today = date.today()
     refs = [
         ("w1", "1주일전", (today - timedelta(days=7)).isoformat()),
@@ -89,9 +121,11 @@ def get_capacity(db=Depends(db_dep)):
     ]
     out = []
     for key, label, cutoff in refs:
+        # 기준일 이하 가장 최근 스냅샷(보통 그 날 자체)
         users = [dict(r) for r in db.execute(
-            "SELECT user, ROUND(SUM(gpu_hours),2) AS gpu_hours FROM usage_log "
-            "WHERE day <= ? GROUP BY user ORDER BY gpu_hours DESC", (cutoff,)
+            "SELECT user, used_gb FROM user_storage "
+            "WHERE day = (SELECT MAX(day) FROM user_storage WHERE day <= ?) "
+            "ORDER BY used_gb DESC", (cutoff,)
         ).fetchall()]
         out.append({"key": key, "label": label, "cutoff": cutoff, "users": users})
     return {"references": out}

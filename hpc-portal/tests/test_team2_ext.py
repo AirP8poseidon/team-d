@@ -42,12 +42,13 @@ def test_stats_usage_core_and_extensions():
         assert {"total", "avgPerDay", "activeUsers", "activeNodes"} <= set(u["summary"])
         assert len(u["trend"]) >= 7   # 추이 1주일 이전부터
 
-        # 용량 체크(기준 시점별 누적)
+        # 스토리지 용량 체크(기준 시점별 스냅샷, GB)
         r = client.get("/api/stats/capacity")
         assert r.status_code == 200
         cap = r.json()["references"]
         assert {ref["key"] for ref in cap} == {"w1", "d3", "today", "now"}
         for ref in cap:
             assert {"key", "label", "cutoff", "users"} <= set(ref)
-        tot = {ref["key"]: sum(x["gpu_hours"] for x in ref["users"]) for ref in cap}
-        assert tot["now"] >= tot["w1"]   # 누적은 현재가 1주일전 이상
+            assert all(set(x) == {"user", "used_gb"} for x in ref["users"])
+        tot = {ref["key"]: sum(x["used_gb"] for x in ref["users"]) for ref in cap}
+        assert tot["now"] >= tot["w1"]   # 스토리지는 증가 경향 → 현재가 1주일전 이상

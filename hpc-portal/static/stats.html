@@ -33,7 +33,7 @@
 
   <div class="container">
     <h1>사용량 통계</h1>
-    <p class="subtitle">노드별/사용자별 GPU-hours 집계 · 추이 · 용량 체크.</p>
+    <p class="subtitle">노드별/사용자별 GPU-hours 집계 · 추이 · 사용자별 스토리지 용량.</p>
 
     <div class="kpi-row">
       <div class="kpi"><div class="label">총 GPU-hours</div><div class="value blue" id="kpi-total">-</div></div>
@@ -56,7 +56,7 @@
 
     <div class="chart-box">
       <div class="cap-head">
-        <h3>사용자별 용량 체크</h3>
+        <h3>사용자별 스토리지 용량</h3>
         <div class="cap-btns" id="cap-btns">
           <button data-k="w1">1주일전</button>
           <button data-k="d3">3일전</button>
@@ -73,9 +73,9 @@
     const C={blue:"#1d4ed8",green:"#047857",orange:"#b45309"};
     let nodeChart=null,userChart=null,trendChart=null,capChart=null;
 
-    function makeBar(ctx,labels,data,color,horizontal){
+    function makeBar(ctx,labels,data,color,horizontal,unit){
       return new Chart(ctx,{type:"bar",
-        data:{labels,datasets:[{label:"GPU-hours",data,backgroundColor:color,borderRadius:6}]},
+        data:{labels,datasets:[{label:unit||"GPU-hours",data,backgroundColor:color,borderRadius:6}]},
         options:{indexAxis:horizontal?"y":"x",responsive:true,plugins:{legend:{display:false}},
           scales:{x:{beginAtZero:true},y:{beginAtZero:true}}}});
     }
@@ -111,13 +111,13 @@
       }
     }
 
-    // ── 사용자별 용량 체크(기준 시점 버튼) ──
+    // ── 사용자별 스토리지 용량(기준 시점 버튼) ──
     let capData={}, curCap="today";
     function renderCap(k){
       const ref=capData[k]; if(!ref) return;
-      const labels=ref.users.map(u=>u.user), data=ref.users.map(u=>u.gpu_hours);
-      document.getElementById("cap-sub").textContent="기준: "+ref.label+" — "+ref.cutoff+" 까지 누적 GPU-hours";
-      if(!capChart) capChart=makeBar(document.getElementById("capChart"),labels,data,C.blue,false);
+      const labels=ref.users.map(u=>u.user), data=ref.users.map(u=>u.used_gb);
+      document.getElementById("cap-sub").textContent="기준: "+ref.label+" ("+ref.cutoff+") · 사용자별 스토리지 점유 용량(GB)";
+      if(!capChart) capChart=makeBar(document.getElementById("capChart"),labels,data,C.blue,false,"스토리지(GB)");
       else{ capChart.data.labels=labels; capChart.data.datasets[0].data=data; capChart.update("none"); }
     }
     async function loadCap(){
