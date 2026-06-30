@@ -109,7 +109,7 @@
     + "<button class='cw-pin-add' id='cwPinAdd'>＋ 점유 선언</button></div>"
     + "<div class='cw-pin-list' id='cwPinList'></div>"
     + "<div class='cw-pin-form' id='cwPinForm'>"
-    + "<input id='cwPinNode' type='text' placeholder='노드 (예: node04)' autocomplete='off' />"
+    + "<input id='cwPinNode' type='text' placeholder='노드명 입력 (예: master, node3)' autocomplete='off' />"
     + "<input id='cwPinUntil' type='text' placeholder='언제까지 (예: ~18:00)' autocomplete='off' />"
     + "<input id='cwPinPurpose' type='text' placeholder='용도 (예: ResNet 학습)' autocomplete='off' />"
     + "<button class='cw-pin-submit' id='cwPinSubmit'>선언 등록</button></div></div>"

@@ -213,6 +213,17 @@
 
 ---
 
+### [#18] 팀장 실서버 메인 머지 + 내 파트 실데모 호환 검증(노드명 하드코딩 0)
+- 작성자(팀원): 김민주(kimminju)
+- 목표: 팀장이 실서버 연동·모니터링 reframe를 메인에 올린 뒤, 내 브랜치로 `git pull`(머지)하고 **`TEAM_SYNC.md` 필수검토 3가지**(노드명 하드코딩 금지·GPU 없음·실행모드 mock/ingest)에 내 파트(위키·채팅 위젯)가 어긋나지 않는지 검증.
+- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
+  > "팀장의 메인 브랜치가 업데이트 됐다고하거든? git pull 후 TEAM_SYNC.md 먼저 읽고 내 파트 진행해줘. 노드명 하드코딩하지말것(API대로 렌더) (hpc-portal/static/monitoring.html이 레퍼런스)"
+- 사용한 기법(있으면): (b 도구연동 — git merge·curl 라이브 스모크·pytest) / (c 재사용산출물 — 머지 충돌 per-member 로그 분리)
+- 결과: ① **`TEAM_SYNC.md` 선독** — 실클러스터는 `master,node1~13`(zero-pad 없음, GPU 0개), 모드별 노드집합 상이 → 라벨·카드·표를 API 응답대로 동적 생성하라(`monitoring.html`의 `fillNodeSelect()`/`map` 패턴)는 §2① 확인. ② **머지** — `origin/main`(팀장 #13~20: ingest 컬렉터·agent 스캔·CPU reframe) 머지, 충돌은 공유 `PROCESS_LOG.md` 1건뿐(소유 파일 분리 덕 코드 충돌 0). 팀장 로그는 별도 `team-d_LeeSeongHoo_PROCESS_LOG.md`로 들어와 있어 내 PROCESS_LOG는 HEAD(내 #13~17) 유지로 해소. ③ **내 파트 점검** — wiki.html은 노드 비의존(servers/posts만), chat-widget 점유보드는 **노드를 자유입력+API응답(`r.node`)으로 렌더**해 하드코딩 0 → mock·ingest 양쪽 무변경 동작. mock 모드 placeholder만 `예: node04`→`예: master, node3`로 모드중립화. ④ **라이브 검증(mock, 8011)** — `/api/wiki/servers`(3대)·`/posts`(9건)·`/chat/messages`(POST→GET)·`/chat/reservations`(node05 등록→목록 렌더) 200, wiki.html·chat-widget.js 200, pytest 11건 PASS.
+- 막힘 → 해결: 머지 시 양 브랜치가 같은 `submit/PROCESS_LOG.md`에 #13~ 동시 추가해 충돌 → CLAUDE.md '개인별 영문 파일명' 규칙대로 팀장 로그는 이미 `team-d_LeeSeongHoo_PROCESS_LOG.md`로 보존됨을 확인하고, 공유 로그는 내 항목(HEAD)만 남겨 해소(정보 유실 0).
+
+---
+
 ## 마무리 요약 (1~2줄)
 - 가장 효과적이었던 에이전트 활용법: 프로토타입(디자인 자산)을 그대로 두고 **가짜 데이터만 API로 교체**해 1.5일 내 동작까지 도달 + 브라우저 MCP로 즉시 라이브 검증.
 - 다른 팀이 그대로 따라 하려면 필요한 것: `submit/assets/`의 킥오프 프롬프트 + `dev_run.py` 단독 실행법(`uvicorn dev_run:app`) + 자체주입 위젯 패턴(한 줄 로드).
