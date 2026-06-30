@@ -9,3 +9,6 @@ app.db-shm
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# push 런타임 데이터 (폴더는 .gitkeep 로 유지)
+data/incoming/*.json

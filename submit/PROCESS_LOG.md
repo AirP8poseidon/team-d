@@ -155,6 +155,18 @@
 
 ---
 
+### [#13] 실서버 연동 — push형 수집(ingest) + 노드 에이전트 + SSH 수신
+- 작성자(팀원): LeeSeongHoo (팀장)
+- 목표: 각 계산 서버가 자기 정보를 SSH로 워크스테이션(포털)에 밀어넣고 대시보드가 조회하는 push형 수집 체계 구축.
+- 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
+  > "각자 서버에서 필요한 정보를 ssh로 웹서비스 서버로 넘겨줘서 조회할 수 있게 하고싶음"
+  > "임시로 여기 서버 아이피 할당해서 연결해서 넘겨받고 싶은데. 방법은?"
+- 사용한 기법: (b) 도구·OS 연동(SSH/scp, nvidia-smi/df/ps), (c) 재사용 산출물(collector 심)
+- 결과: **수신** `collectors/ingest.py`(+팩토리 `ingest` 등록) — `data/incoming/<node>.json` 읽어 nodes/jobs/health upsert, 깨진 파일·빈 폴더 무시, **유효 리포트 0개면 mock 폴백**(데모 안전), node01~08만 수용. **송신** `agent/node_report.py` — nvidia-smi/CPU/MEM/df/NFS/`ps`(mpirun 직접 실행) 수집 → JSON → scp 푸시(1회/루프/--out 테스트). `agent/README.md` 설정 안내. 포털 호스트 SSH(원격 로그인) ON 확인(10.10.9.101 sshd 응답). **오프라인 검증**: 에이전트로 리포트 생성→incoming 투입→`COLLECTOR=ingest` 부팅→node04(A100 gpu91·temp71)·mpirun 작업이 대시보드 API에 반영 확인. `data/incoming/*.json`은 gitignore(.gitkeep로 폴더 유지), pytest 5건 유지.
+- 막힘 → 해결: ① macOS `systemsetup -setremotelogin`이 Full Disk Access 요구 → GUI(공유→원격 로그인)로 우회. ② `lsof`가 root 소유 22번 소켓을 비권한으로 못 봐 OFF 오인 → ssh BatchMode 핸드셰이크로 확정. ③ 에이전트 mpirun 탐지가 인자 문자열 부분일치로 오탐(P2) → 실행파일명이 정확히 mpirun/mpiexec인 토큰만 매칭하도록 수정·재검증.
+
+---
+
 ## 마무리 요약 (1~2줄)
 - 가장 효과적이었던 에이전트 활용법: **인터뷰로 모호한 의도를 청사진 1문서로 수렴** → 그 문서에서 팀원별 핸드오버·킥오프 프롬프트를 파생해 충돌 0으로 병렬 착수.
 - 다른 팀이 그대로 따라 하려면 필요한 것: `DEV_BLUEPRINT.md` 양식(역할·소유파일·DB·API·통합 접점·킥오프 프롬프트) + "공통 파일은 한 명만 수정" 규칙.
