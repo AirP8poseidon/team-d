@@ -17,3 +17,6 @@ demo.db*
 
 server.out.log
 server.err.log
+
+refresh.out.log
+refresh.err.log

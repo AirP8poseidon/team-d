@@ -65,7 +65,7 @@
       <div class="kpi"><div class="label">전체 노드 수</div><div class="value" id="k-total">--</div></div>
       <div class="kpi"><div class="label">가동 중 노드</div><div class="value green" id="k-run">--</div></div>
       <div class="kpi"><div class="label">대기 중 Job</div><div class="value orange" id="k-wait">--</div></div>
-      <div class="kpi"><div class="label">평균 GPU 사용률</div><div class="value blue" id="k-gpu">--%</div></div>
+      <div class="kpi"><div class="label">평균 CPU 사용률</div><div class="value blue" id="k-cpu">--%</div></div>
     </div>
 
     <h2 class="sec-title">바로가기</h2>
@@ -73,7 +73,7 @@
       <div class="home-card">
         <div class="ico">📊</div>
         <h3>모니터링</h3>
-        <p>노드 상태, CPU/GPU/메모리 사용률과 작업 큐, 현재 작업 맥락(누가·왜)을 한눈에 확인하세요.</p>
+        <p>노드 상태, CPU·메모리 사용률과 작업 큐, 현재 작업 맥락(누가·왜)을 한눈에 확인하세요.</p>
         <a class="btn" href="/static/monitoring.html">모니터링 열기</a>
       </div>
       <div class="home-card">
@@ -85,7 +85,7 @@
       <div class="home-card">
         <div class="ico">📈</div>
         <h3>사용량 통계</h3>
-        <p>노드별·사용자별 GPU 사용량 집계와 추이를 차트로 살펴봅니다.</p>
+        <p>노드별·사용자별 사용량(코어·시간) 집계와 추이를 차트로 살펴봅니다.</p>
         <a class="btn" href="/static/stats.html">사용량 통계 열기</a>
       </div>
       <div class="home-card">
@@ -118,13 +118,13 @@
         var jobs = await jobsRes.json();
         var running = nodes.filter(function(n){return normNodeStatus(n.status)==='run';});
         var waiting = jobs.filter(function(j){return String(j.status||'').toUpperCase()!=='RUNNING';});
-        var avgGpu = running.length
-          ? Math.round(running.reduce(function(s,n){return s+(Number(n.gpu)||0);},0)/running.length)
+        var avgCpu = running.length
+          ? Math.round(running.reduce(function(s,n){return s+(Number(n.cpu)||0);},0)/running.length)
           : 0;
         document.getElementById('k-total').textContent = nodes.length;
         document.getElementById('k-run').textContent = running.length;
         document.getElementById('k-wait').textContent = waiting.length;
-        document.getElementById('k-gpu').textContent = avgGpu + '%';
+        document.getElementById('k-cpu').textContent = avgCpu + '%';
       }catch(e){ console.error('KPI 로드 실패', e); }
     })();
   </script>

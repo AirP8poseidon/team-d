@@ -89,3 +89,6 @@
 
 # 2026-06-30 21:10:01 노드 온도 수집 — 실측+추정 fallback (#23)
 2026-06-30 21:10:01 hpc-portal/agent/collect_node.py (temp 파서 개선 + 센서없는 노드 추정)
+
+# 2026-06-30 21:34:39 외부공개+자동갱신+홈 GPU→CPU (#24)
+2026-06-30 21:34:39 static/index.html(GPU→CPU) · refresh_loop.ps1 · run_server.bat · run_refresh.bat
