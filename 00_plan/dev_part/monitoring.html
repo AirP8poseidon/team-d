@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사내 HPC 포털 - 모니터링</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6fb; --paper:#ffffff; --ink:#172033; --muted:#64748b;
+    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a; --green:#047857;
+    --orange:#b45309; --red:#b91c1c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
+    line-height:1.5;
+  }
+  a{text-decoration:none;color:inherit;}
+  .nav{
+    background:var(--navy); color:#fff; display:flex; align-items:center;
+    justify-content:space-between; padding:14px 28px; flex-wrap:wrap; gap:10px;
+  }
+  .nav .brand{font-size:19px;font-weight:700;letter-spacing:.5px;}
+  .nav .menu{display:flex;gap:6px;flex-wrap:wrap;}
+  .nav .menu a{padding:8px 14px;border-radius:8px;color:#cbd5e1;font-size:14px;transition:.15s;}
+  .nav .menu a:hover{background:rgba(255,255,255,.1);color:#fff;}
+  .nav .menu a.active{background:var(--blue);color:#fff;font-weight:600;}
+  .wrap{max-width:1200px;margin:0 auto;padding:26px 22px 60px;}
+  .page-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+  .page-head h1{margin:0;font-size:26px;}
+  .page-head .upd{font-size:13px;color:var(--muted);}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:blink 1.6s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:15px 18px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
+  .kpi .label{font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .kpi .value{font-size:25px;font-weight:700;}
+  .kpi .value.green{color:var(--green);}
+  .kpi .value.orange{color:var(--orange);}
+  .kpi .value.blue{color:var(--blue);}
+  .kpi .value.red{color:var(--red);}
+  .sec-title{font-size:19px;font-weight:700;margin:30px 0 14px;}
+  .nodes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .node{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
+  .node .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .node .name{font-weight:700;font-size:15px;}
+  .badge{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;color:#fff;}
+  .badge.run{background:var(--green);}
+  .badge.idle{background:var(--muted);}
+  .badge.maint{background:var(--orange);}
+  .gpu-tag{font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .metric{margin-bottom:8px;}
+  .metric .ml{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:3px;}
+  .bar{height:8px;background:#e8edf5;border-radius:6px;overflow:hidden;}
+  .bar > span{display:block;height:100%;border-radius:6px;transition:width .6s ease;}
+  .fill-cpu{background:var(--blue);}
+  .fill-gpu{background:var(--green);}
+  .fill-mem{background:var(--orange);}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 8px rgba(15,23,42,.05);overflow:hidden;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{background:#eef2f9;text-align:left;padding:11px 14px;color:var(--navy);font-weight:700;border-bottom:1px solid var(--line);white-space:nowrap;}
+  tbody td{padding:10px 14px;border-bottom:1px solid #eef1f6;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#f8fafc;}
+  .st{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;color:#fff;}
+  .st.run{background:var(--green);}
+  .st.wait{background:var(--orange);}
+  .chart-box{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 2px 8px rgba(15,23,42,.05);}
+  .chart-box h3{margin:0 0 12px;font-size:16px;}
+  @media(max-width:1000px){.nodes{grid-template-columns:repeat(2,1fr);}.kpi-row{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.nodes{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr;}}
+  .scroll-x{overflow-x:auto;}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">사내 HPC 포털</div>
+    <div class="menu">
+      <a href="index.html">홈</a>
+      <a href="monitoring.html" class="active">모니터링</a>
+      <a href="wiki.html">정보공유</a>
+      <a href="chat.html">실시간 채팅</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="page-head">
+      <h1>HPC 클러스터 모니터링</h1>
+      <div class="upd"><span class="dot"></span>실시간 갱신 중 · 마지막 갱신 <span id="upd-time">--:--:--</span></div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">전체 노드</div><div class="value">8</div></div>
+      <div class="kpi"><div class="label">가동 / 유휴 / 점검</div><div class="value green">5 <span style="color:var(--muted)">/</span> <span style="color:var(--muted)">2</span> <span style="color:var(--muted)">/</span> <span style="color:var(--orange)">1</span></div></div>
+      <div class="kpi"><div class="label">대기 / 실행 Job</div><div class="value blue"><span id="kpi-wait">5</span> <span style="color:var(--muted)">/</span> <span style="color:var(--green)"><span id="kpi-run">7</span></span></div></div>
+      <div class="kpi"><div class="label">평균 CPU / GPU / MEM</div><div class="value orange"><span id="kpi-cpu">61</span>% <span style="color:var(--green);font-size:18px">G <span id="kpi-gpu">72</span>%</span> <span style="color:var(--orange);font-size:18px">M <span id="kpi-mem">58</span>%</span></div></div>
+    </div>
+
+    <h2 class="sec-title">노드 상태</h2>
+    <div class="nodes" id="node-grid"></div>
+
+    <h2 class="sec-title">노드별 GPU 사용률</h2>
+    <div class="chart-box">
+      <h3>실시간 GPU 사용률 (%)</h3>
+      <canvas id="gpuChart" height="110"></canvas>
+    </div>
+
+    <h2 class="sec-title">작업(Job) 큐</h2>
+    <div class="panel scroll-x">
+      <table>
+        <thead>
+          <tr>
+            <th>JobID</th><th>사용자</th><th>노드</th><th>작업 목적</th><th>상태</th><th>경과시간</th>
+          </tr>
+        </thead>
+        <tbody id="job-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  const nodes = [
+    {name:"node01", status:"run",   gpu:"A100 x4", cpu:78, g:88, mem:64},
+    {name:"node02", status:"run",   gpu:"A100 x4", cpu:65, g:74, mem:59},
+    {name:"node03", status:"run",   gpu:"A100 x4", cpu:82, g:91, mem:71},
+    {name:"node04", status:"idle",  gpu:"A100 x4", cpu:12, g:5,  mem:18},
+    {name:"node05", status:"run",   gpu:"V100 x8", cpu:70, g:80, mem:62},
+    {name:"node06", status:"run",   gpu:"V100 x8", cpu:58, g:66, mem:55},
+    {name:"node07", status:"idle",  gpu:"V100 x8", cpu:8,  g:3,  mem:14},
+    {name:"node08", status:"maint", gpu:"RTX6000 x4", cpu:0, g:0, mem:5},
+  ];
+  const stLabel = {run:"가동중", idle:"유휴", maint:"점검"};
+
+  function nodeCard(n){
+    return '<div class="node">'+
+      '<div class="top">'+
+        '<span class="name">'+n.name+'</span>'+
+        '<span class="badge '+n.status+'">'+stLabel[n.status]+'</span>'+
+      '</div>'+
+      '<div class="gpu-tag">GPU: '+n.gpu+'</div>'+
+      '<div class="metric"><div class="ml"><span>CPU</span><span>'+n.cpu+'%</span></div><div class="bar"><span class="fill-cpu" style="width:'+n.cpu+'%"></span></div></div>'+
+      '<div class="metric"><div class="ml"><span>GPU</span><span>'+n.g+'%</span></div><div class="bar"><span class="fill-gpu" style="width:'+n.g+'%"></span></div></div>'+
+      '<div class="metric"><div class="ml"><span>MEM</span><span>'+n.mem+'%</span></div><div class="bar"><span class="fill-mem" style="width:'+n.mem+'%"></span></div></div>'+
+    '</div>';
+  }
+  function renderNodes(){
+    document.getElementById("node-grid").innerHTML = nodes.map(nodeCard).join("");
+  }
+
+  const jobs = [
+    {id:"J20481", user:"김지훈",   node:"node01", purpose:"딥러닝 모델 학습 (ResNet-152)", st:"run",  t:"04:12:38"},
+    {id:"J20482", user:"이수민",   node:"node03", purpose:"대규모 언어모델 파인튜닝",       st:"run",  t:"11:47:05"},
+    {id:"J20483", user:"박서연",   node:"node02", purpose:"수치모델 시뮬레이션 (CFD)",     st:"run",  t:"02:31:19"},
+    {id:"J20484", user:"정민재",   node:"node05", purpose:"위성영상 전처리 파이프라인",     st:"run",  t:"00:48:52"},
+    {id:"J20485", user:"최예린",   node:"node06", purpose:"분자동역학 계산",               st:"run",  t:"08:05:44"},
+    {id:"J20486", user:"한도윤",   node:"node01", purpose:"강화학습 에이전트 훈련",         st:"run",  t:"01:22:10"},
+    {id:"J20487", user:"오지아",   node:"node03", purpose:"기상 데이터 앙상블 예측",        st:"run",  t:"03:59:27"},
+    {id:"J20488", user:"서준호",   node:"대기열", purpose:"유전체 서열 정렬",              st:"wait", t:"00:00:00"},
+    {id:"J20489", user:"윤채원",   node:"대기열", purpose:"딥러닝 하이퍼파라미터 탐색",     st:"wait", t:"00:00:00"},
+    {id:"J20490", user:"강태현",   node:"대기열", purpose:"이미지 생성모델 추론 배치",       st:"wait", t:"00:00:00"},
+    {id:"J20491", user:"임하늘",   node:"대기열", purpose:"수치모델 시뮬레이션 (해양)",     st:"wait", t:"00:00:00"},
+    {id:"J20492", user:"신유진",   node:"대기열", purpose:"위성영상 객체탐지 학습",         st:"wait", t:"00:00:00"},
+  ];
+  function renderJobs(){
+    document.getElementById("job-body").innerHTML = jobs.map(function(j){
+      return '<tr>'+
+        '<td>'+j.id+'</td><td>'+j.user+'</td><td>'+j.node+'</td><td>'+j.purpose+'</td>'+
+        '<td><span class="st '+j.st+'">'+(j.st==="run"?"실행중":"대기")+'</span></td>'+
+        '<td>'+j.t+'</td>'+
+      '</tr>';
+    }).join("");
+  }
+
+  let gpuChart = null;
+  function initChart(){
+    if(typeof Chart === "undefined") return;
+    const ctx = document.getElementById("gpuChart");
+    gpuChart = new Chart(ctx, {
+      type:"bar",
+      data:{
+        labels: nodes.map(function(n){return n.name;}),
+        datasets:[{
+          label:"GPU 사용률 %",
+          data: nodes.map(function(n){return n.g;}),
+          backgroundColor:"#047857",
+          borderRadius:6
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,max:100,ticks:{callback:function(v){return v+"%";}}}}
+      }
+    });
+  }
+
+  function jitter(v,lo,hi){
+    var n = v + (Math.floor(Math.random()*7)-3);
+    return Math.max(lo, Math.min(hi, n));
+  }
+  function tick(){
+    nodes.forEach(function(n){
+      if(n.status==="run"){
+        n.cpu = jitter(n.cpu,40,95);
+        n.g   = jitter(n.g,45,98);
+        n.mem = jitter(n.mem,35,90);
+      }
+    });
+    renderNodes();
+    if(gpuChart){
+      gpuChart.data.datasets[0].data = nodes.map(function(n){return n.g;});
+      gpuChart.update("none");
+    }
+    var run = nodes.filter(function(n){return n.status==="run";});
+    var avg = function(arr,k){return Math.round(arr.reduce(function(s,n){return s+n[k];},0)/arr.length);};
+    document.getElementById("kpi-cpu").textContent = avg(run,"cpu");
+    document.getElementById("kpi-gpu").textContent = avg(run,"g");
+    document.getElementById("kpi-mem").textContent = avg(run,"mem");
+    var now = new Date();
+    document.getElementById("upd-time").textContent = now.toTimeString().slice(0,8);
+  }
+
+  renderNodes();
+  renderJobs();
+  initChart();
+  tick();
+  setInterval(tick, 3000);
+</script>
+</body>
+</html>

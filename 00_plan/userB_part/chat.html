@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실시간 채팅 · 사내 HPC 포털</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --paper:#ffffff; --ink:#172033; --muted:#64748b;
+    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a; --green:#047857; --orange:#b45309;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
+    line-height:1.5;
+  }
+  /* ===== 네비게이션 ===== */
+  .nav{
+    background:var(--navy); color:#fff; display:flex; align-items:center;
+    justify-content:space-between; padding:14px 24px; flex-wrap:wrap; gap:10px;
+  }
+  .nav .brand{font-size:18px; font-weight:700; letter-spacing:.3px;}
+  .nav .menu{display:flex; gap:6px; flex-wrap:wrap;}
+  .nav .menu a{
+    color:#cbd5e1; text-decoration:none; padding:7px 14px; border-radius:8px;
+    font-size:14px; transition:background .15s, color .15s;
+  }
+  .nav .menu a:hover{background:rgba(255,255,255,.1); color:#fff;}
+  .nav .menu a.active{background:var(--blue); color:#fff; font-weight:700;}
+
+  /* ===== 레이아웃 ===== */
+  .wrap{max-width:1180px; margin:0 auto; padding:22px 18px 40px;}
+  .page-title{margin:6px 0 18px; font-size:22px; font-weight:700;}
+  .page-title small{display:block; font-size:13px; font-weight:400; color:var(--muted); margin-top:4px;}
+  .grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px;}
+  @media (max-width:880px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 2px 10px rgba(15,23,42,.05); padding:16px 18px;
+  }
+  .card h2{margin:0 0 4px; font-size:16px;}
+  .card .sub{color:var(--muted); font-size:12.5px; margin:0 0 14px;}
+
+  /* ===== 등록 폼 ===== */
+  .form-row{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
+  .form-row.full{grid-template-columns:1fr;}
+  label{font-size:12px; color:var(--muted); display:block; margin-bottom:3px;}
+  input, select{
+    width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px;
+    font-family:inherit; font-size:13.5px; color:var(--ink); background:#fff;
+  }
+  input:focus, select:focus{outline:none; border-color:var(--blue);}
+  .btn{
+    border:none; border-radius:8px; padding:9px 16px; font-size:13.5px; cursor:pointer;
+    font-family:inherit; font-weight:600; background:var(--blue); color:#fff;
+  }
+  .btn:hover{filter:brightness(1.07);}
+  .btn.full{width:100%; margin-top:4px;}
+
+  /* ===== 사용현황 보드 ===== */
+  .board-list{display:flex; flex-direction:column; gap:10px; margin-top:14px;
+    max-height:520px; overflow-y:auto; padding-right:2px;}
+  .usage{
+    border:1px solid var(--line); border-radius:11px; padding:11px 13px;
+    display:flex; align-items:flex-start; gap:11px; background:#fbfcfe;
+  }
+  .usage .dot{width:11px; height:11px; border-radius:50%; margin-top:5px; flex:none;
+    background:var(--green); box-shadow:0 0 0 4px rgba(4,120,135,.12);}
+  .usage.queued .dot{background:var(--orange); box-shadow:0 0 0 4px rgba(180,83,9,.12);}
+  .usage .info{flex:1; min-width:0;}
+  .usage .node{font-weight:700; font-size:14px;}
+  .usage .node .badge{
+    font-size:11px; font-weight:600; color:var(--green); margin-left:6px;
+    background:rgba(4,120,135,.10); padding:2px 7px; border-radius:20px;
+  }
+  .usage.queued .node .badge{color:var(--orange); background:rgba(180,83,9,.10);}
+  .usage .who{font-size:12.5px; color:var(--muted); margin:2px 0;}
+  .usage .purpose{font-size:13px;}
+  .usage .eta{font-size:11.5px; color:var(--blue); margin-top:3px; font-weight:600;}
+
+  /* ===== 채팅 ===== */
+  .chat-box{display:flex; flex-direction:column; height:560px;}
+  .messages{flex:1; overflow-y:auto; padding:4px 2px; display:flex; flex-direction:column; gap:10px;}
+  .msg{max-width:78%; display:flex; flex-direction:column;}
+  .msg .meta{font-size:11px; color:var(--muted); margin:0 4px 3px;}
+  .msg .bubble{padding:9px 12px; border-radius:14px; font-size:13.5px; word-break:break-word;}
+  .msg.them{align-self:flex-start; align-items:flex-start;}
+  .msg.them .bubble{background:#eef2f9; color:var(--ink); border-top-left-radius:4px;}
+  .msg.me{align-self:flex-end; align-items:flex-end;}
+  .msg.me .meta{text-align:right;}
+  .msg.me .bubble{background:var(--blue); color:#fff; border-top-right-radius:4px;}
+  .chat-input{display:flex; gap:8px; margin-top:12px;}
+  .chat-input input{flex:1;}
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">사내 HPC 포털</div>
+    <div class="menu">
+      <a href="index.html">홈</a>
+      <a href="monitoring.html">모니터링</a>
+      <a href="wiki.html">정보공유</a>
+      <a href="chat.html" class="active">실시간 채팅</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <h1 class="page-title">실시간 채팅 &amp; 사용현황 보드
+      <small>지금 누가 어느 노드를 무슨 목적으로 쓰는지 공유하고, 사용자끼리 실시간으로 소통하세요.</small>
+    </h1>
+
+    <div class="grid">
+      <!-- 좌: 사용현황 보드 -->
+      <section class="card">
+        <h2>지금 누가 뭐 쓰는 중</h2>
+        <p class="sub">노드 점유 현황을 직접 등록해 주세요. 다른 사용자와 충돌을 줄일 수 있어요.</p>
+
+        <div class="form-row">
+          <div>
+            <label for="f-node">노드</label>
+            <select id="f-node">
+              <option>node01</option><option>node02</option>
+              <option selected>node03</option><option>node04</option>
+              <option>node05</option><option>node06</option>
+              <option>gpu-a100-01</option><option>gpu-a100-02</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-user">사용자</label>
+            <input id="f-user" type="text" placeholder="예: 김연구">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="f-purpose">작업 목적</label>
+            <input id="f-purpose" type="text" placeholder="예: 딥러닝 학습">
+          </div>
+          <div>
+            <label for="f-eta">예상 종료</label>
+            <input id="f-eta" type="text" placeholder="예: 18:00까지">
+          </div>
+        </div>
+        <button class="btn full" onclick="addUsage()">보드에 등록</button>
+
+        <div class="board-list" id="board"></div>
+      </section>
+
+      <!-- 우: 채팅 -->
+      <section class="card chat-box">
+        <h2>실시간 채팅</h2>
+        <p class="sub">HPC 사용 관련 질문/공지를 자유롭게 나눠 주세요.</p>
+        <div class="messages" id="messages"></div>
+        <div class="chat-input">
+          <input id="chat-text" type="text" placeholder="메시지를 입력하세요…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="btn" onclick="sendMsg()">전송</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+  /* ===== 사용현황 보드 목업 ===== */
+  const usageData = [
+    {node:'node03', user:'김연구', purpose:'딥러닝 학습 (ResNet 파인튜닝)', eta:'18:00까지', status:'run'},
+    {node:'gpu-a100-01', user:'박엔지', purpose:'LLM 추론 벤치마크', eta:'15:30까지', status:'run'},
+    {node:'node05', user:'시스템관리', purpose:'정기 점검 / 펌웨어 업데이트', eta:'15:00까지', status:'queued'},
+    {node:'node02', user:'이데이터', purpose:'대용량 전처리 배치 (Spark)', eta:'21:00까지', status:'run'},
+    {node:'node06', user:'최시뮬', purpose:'CFD 유동해석 시뮬레이션', eta:'내일 09:00까지', status:'run'},
+    {node:'gpu-a100-02', user:'정비전', purpose:'영상 세그멘테이션 학습', eta:'19:30까지', status:'run'},
+  ];
+
+  function renderBoard(){
+    const box = document.getElementById('board');
+    box.innerHTML = '';
+    usageData.forEach(u => box.appendChild(usageNode(u)));
+  }
+  function usageNode(u){
+    const el = document.createElement('div');
+    el.className = 'usage' + (u.status==='queued' ? ' queued' : '');
+    const badge = u.status==='queued' ? '점검/대기' : '가동중';
+    el.innerHTML =
+      '<span class="dot"></span>' +
+      '<div class="info">' +
+        '<div class="node">'+esc(u.node)+'<span class="badge">'+badge+'</span></div>' +
+        '<div class="who">'+esc(u.user)+'</div>' +
+        '<div class="purpose">'+esc(u.purpose)+'</div>' +
+        '<div class="eta">예상 종료: '+esc(u.eta)+'</div>' +
+      '</div>';
+    return el;
+  }
+  function addUsage(){
+    const node = document.getElementById('f-node').value;
+    const user = document.getElementById('f-user').value.trim();
+    const purpose = document.getElementById('f-purpose').value.trim();
+    const eta = document.getElementById('f-eta').value.trim();
+    if(!user || !purpose){ alert('사용자와 작업 목적을 입력해 주세요.'); return; }
+    const u = {node, user, purpose, eta: eta || '미정', status:'run'};
+    usageData.unshift(u);
+    const box = document.getElementById('board');
+    box.insertBefore(usageNode(u), box.firstChild);
+    document.getElementById('f-user').value='';
+    document.getElementById('f-purpose').value='';
+    document.getElementById('f-eta').value='';
+  }
+
+  /* ===== 채팅 목업 ===== */
+  const ME = '나(이서버)';
+  const chatData = [
+    {from:'박엔지', time:'14:02', text:'node05 지금 점검 중인가요? 작업 올리려는데 응답이 없네요.'},
+    {from:'시스템관리', time:'14:03', text:'네 오후 3시까지 점검입니다~ 펌웨어 업데이트 중이에요.'},
+    {from:'박엔지', time:'14:04', text:'아 감사합니다. 그럼 node02로 돌릴게요.'},
+    {from:'김연구', time:'14:11', text:'gpu-a100 두 대 다 사용 중이던데 오늘 안에 빌까요?'},
+    {from:'정비전', time:'14:13', text:'a100-02는 7시 반쯤 끝날 것 같아요. 보드에 등록해뒀습니다!'},
+    {from:'김연구', time:'14:14', text:'오 좋아요, 그때 바로 잡을게요 ㅎㅎ'},
+    {from:'이데이터', time:'14:20', text:'전처리 배치 돌리느라 node02 I/O 좀 점유될 수 있어요. 양해 부탁드립니다.'},
+  ];
+
+  function renderChat(){
+    const box = document.getElementById('messages');
+    box.innerHTML = '';
+    chatData.forEach(m => box.appendChild(msgNode(m)));
+    scrollChat();
+  }
+  function msgNode(m){
+    const mine = m.from === ME;
+    const el = document.createElement('div');
+    el.className = 'msg ' + (mine ? 'me' : 'them');
+    el.innerHTML =
+      '<div class="meta">'+esc(m.from)+' · '+esc(m.time)+'</div>' +
+      '<div class="bubble">'+esc(m.text)+'</div>';
+    return el;
+  }
+  function sendMsg(){
+    const inp = document.getElementById('chat-text');
+    const text = inp.value.trim();
+    if(!text) return;
+    const m = {from:ME, time:nowTime(), text};
+    chatData.push(m);
+    document.getElementById('messages').appendChild(msgNode(m));
+    inp.value='';
+    scrollChat();
+  }
+
+  /* ===== 데모용 자동 도착 메시지 ===== */
+  const autoMsgs = [
+    {from:'박엔지', text:'node03 학습 끝나면 알려주실 수 있나요? GPU 한 대 급하게 필요해서요.'},
+    {from:'최시뮬', text:'CFD 시뮬 내일 아침까지 돌아갑니다~ node06 점유 양해 부탁드려요.'},
+    {from:'시스템관리', text:'[공지] 오늘 22시부터 스토리지 백업 작업 예정입니다. I/O 성능 저하 가능.'},
+    {from:'이데이터', text:'전처리 배치 방금 끝났어요. node02 이제 여유 있습니다!'},
+    {from:'정비전', text:'a100-02 곧 반납합니다. 김연구님 준비해 두세요 :)'},
+  ];
+  let autoIdx = 0;
+  setInterval(() => {
+    if(autoIdx >= autoMsgs.length) return;
+    const a = autoMsgs[autoIdx++];
+    const m = {from:a.from, time:nowTime(), text:a.text};
+    chatData.push(m);
+    document.getElementById('messages').appendChild(msgNode(m));
+    scrollChat();
+  }, 12000);
+
+  /* ===== 유틸 ===== */
+  function nowTime(){
+    const d = new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function scrollChat(){
+    const box = document.getElementById('messages');
+    box.scrollTop = box.scrollHeight;
+  }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  renderBoard();
+  renderChat();
+</script>
+</body>
+</html>

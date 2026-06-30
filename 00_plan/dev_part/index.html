@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사내 HPC 포털 - 홈</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --paper:#ffffff; --ink:#172033; --muted:#64748b;
+    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a; --green:#047857;
+    --orange:#b45309; --red:#b91c1c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
+    line-height:1.5;
+  }
+  a{text-decoration:none;color:inherit;}
+  .nav{
+    background:var(--navy); color:#fff; display:flex; align-items:center;
+    justify-content:space-between; padding:14px 28px; flex-wrap:wrap; gap:10px;
+  }
+  .nav .brand{font-size:19px;font-weight:700;letter-spacing:.5px;}
+  .nav .menu{display:flex;gap:6px;flex-wrap:wrap;}
+  .nav .menu a{
+    padding:8px 14px;border-radius:8px;color:#cbd5e1;font-size:14px;
+    transition:.15s;
+  }
+  .nav .menu a:hover{background:rgba(255,255,255,.1);color:#fff;}
+  .nav .menu a.active{background:var(--blue);color:#fff;font-weight:600;}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 22px 60px;}
+  .hero{
+    background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 100%);
+    color:#fff;border-radius:18px;padding:46px 38px;margin-bottom:28px;
+    box-shadow:0 8px 24px rgba(15,23,42,.18);
+  }
+  .hero h1{margin:0 0 12px;font-size:34px;}
+  .hero p{margin:0;font-size:17px;color:#dbeafe;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;}
+  .kpi{
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;box-shadow:0 2px 8px rgba(15,23,42,.05);
+  }
+  .kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .kpi .value{font-size:28px;font-weight:700;}
+  .kpi .value.green{color:var(--green);}
+  .kpi .value.orange{color:var(--orange);}
+  .kpi .value.blue{color:var(--blue);}
+  .sec-title{font-size:20px;font-weight:700;margin:0 0 16px;}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .card{
+    background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    padding:24px;box-shadow:0 2px 10px rgba(15,23,42,.06);
+    display:flex;flex-direction:column;
+  }
+  .card .ico{font-size:30px;margin-bottom:10px;}
+  .card h3{margin:0 0 8px;font-size:18px;}
+  .card p{margin:0 0 18px;color:var(--muted);font-size:14px;flex:1;}
+  .btn{
+    display:inline-block;text-align:center;background:var(--blue);color:#fff;
+    padding:10px 16px;border-radius:9px;font-size:14px;font-weight:600;
+    transition:.15s;
+  }
+  .btn:hover{background:#163fb8;}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:40px;}
+  @media(max-width:860px){
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .cards{grid-template-columns:1fr;}
+    .hero h1{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">사내 HPC 포털</div>
+    <div class="menu">
+      <a href="index.html" class="active">홈</a>
+      <a href="monitoring.html">모니터링</a>
+      <a href="wiki.html">정보공유</a>
+      <a href="chat.html">실시간 채팅</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <section class="hero">
+      <h1>사내 HPC 포털</h1>
+      <p>노드 모니터링 · 환경 공유 · 실시간 소통을 한 곳에서.</p>
+    </section>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">전체 노드 수</div><div class="value">8</div></div>
+      <div class="kpi"><div class="label">가동 중 노드</div><div class="value green">6</div></div>
+      <div class="kpi"><div class="label">대기 중 Job</div><div class="value orange">5</div></div>
+      <div class="kpi"><div class="label">평균 GPU 사용률</div><div class="value blue">72%</div></div>
+    </div>
+
+    <h2 class="sec-title">바로가기</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">📊</div>
+        <h3>모니터링</h3>
+        <p>SLURM 스타일 대시보드로 노드 상태, CPU/GPU/메모리 사용률과 작업 큐를 한눈에 확인하세요.</p>
+        <a class="btn" href="monitoring.html">모니터링 열기</a>
+      </div>
+      <div class="card">
+        <div class="ico">📚</div>
+        <h3>정보공유</h3>
+        <p>실행 환경, 모듈 설정, 자주 쓰는 스크립트와 노하우를 팀과 함께 위키로 정리합니다.</p>
+        <a class="btn" href="wiki.html">정보공유 열기</a>
+      </div>
+      <div class="card">
+        <div class="ico">💬</div>
+        <h3>실시간 채팅</h3>
+        <p>장애 공유, 자원 협의, 빠른 질의응답을 위한 팀 실시간 채팅 공간입니다.</p>
+        <a class="btn" href="chat.html">채팅 열기</a>
+      </div>
+    </div>
+
+    <footer>© 2026 사내 HPC 포털 · 해커톤 데모 (목업 데이터)</footer>
+  </div>
+</body>
+</html>

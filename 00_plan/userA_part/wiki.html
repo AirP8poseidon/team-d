@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>정보공유 · 사내 HPC 포털</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --paper:#ffffff; --ink:#172033; --muted:#64748b;
+    --line:#d8dee9; --blue:#1d4ed8; --navy:#0f172a; --green:#047857; --orange:#b45309;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
+    line-height:1.6;
+  }
+  .nav{
+    background:var(--navy); color:#fff; display:flex; align-items:center;
+    justify-content:space-between; padding:0 22px; height:60px; position:sticky; top:0; z-index:50;
+    box-shadow:0 2px 10px rgba(15,23,42,.18);
+  }
+  .nav .brand{ font-size:18px; font-weight:700; letter-spacing:.3px; }
+  .nav .menu{ display:flex; gap:6px; flex-wrap:wrap; }
+  .nav .menu a{
+    color:#cbd5e1; text-decoration:none; padding:8px 14px; border-radius:8px;
+    font-size:14px; transition:.15s;
+  }
+  .nav .menu a:hover{ background:rgba(255,255,255,.08); color:#fff; }
+  .nav .menu a.active{ background:var(--blue); color:#fff; font-weight:600; }
+
+  .wrap{ max-width:1080px; margin:0 auto; padding:26px 18px 60px; }
+  .page-head h1{ margin:6px 0 4px; font-size:26px; }
+  .page-head p{ margin:0; color:var(--muted); }
+  h2.section{ font-size:20px; margin:34px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--line); }
+
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 4px 14px rgba(15,23,42,.05); padding:18px 20px; margin-bottom:16px;
+  }
+  .servers{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .server-card h3{ margin:0 0 4px; font-size:17px; display:flex; align-items:center; gap:8px; }
+  .badge{ font-size:11px; padding:2px 9px; border-radius:999px; color:#fff; font-weight:600; }
+  .b-gpu{ background:var(--green); }
+  .b-cpu{ background:var(--blue); }
+  .b-fat{ background:var(--orange); }
+  .server-card .sub{ color:var(--muted); font-size:12px; margin:0 0 12px; }
+  dl.spec{ margin:0; display:grid; grid-template-columns:84px 1fr; gap:6px 10px; font-size:13.5px; }
+  dl.spec dt{ color:var(--muted); font-weight:600; }
+  dl.spec dd{ margin:0; }
+  code.inline{ background:#eef2f9; padding:1px 6px; border-radius:5px; font-size:12.5px; color:var(--navy); }
+  .mods span{
+    display:inline-block; background:#eef2f9; color:var(--navy); border:1px solid var(--line);
+    border-radius:6px; padding:2px 8px; font-size:12px; margin:3px 4px 0 0;
+  }
+
+  ol.steps{ margin:0; padding-left:0; list-style:none; counter-reset:step; }
+  ol.steps > li{ position:relative; padding:0 0 18px 44px; }
+  ol.steps > li:before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:0; width:30px; height:30px; border-radius:50%;
+    background:var(--blue); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:14px;
+  }
+  ol.steps > li:not(:last-child):after{
+    content:""; position:absolute; left:14px; top:32px; bottom:2px; width:2px; background:var(--line);
+  }
+  ol.steps h4{ margin:4px 0 6px; font-size:15px; }
+  pre{
+    background:var(--navy); color:#e2e8f0; padding:14px 16px; border-radius:10px;
+    overflow:auto; font-size:12.5px; line-height:1.55; margin:8px 0 0;
+    font-family:Consolas,"Courier New",monospace;
+  }
+  pre .cm{ color:#7dd3fc; }
+  pre .pr{ color:#86efac; }
+
+  .board-tools{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .board-tools input[type=text]{
+    flex:1; min-width:200px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font-size:14px;
+  }
+  .btn{
+    border:none; background:var(--blue); color:#fff; padding:10px 16px; border-radius:9px;
+    font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover{ filter:brightness(.94); }
+  .btn.ghost{ background:#fff; color:var(--blue); border:1px solid var(--blue); }
+
+  #writeForm{ display:none; gap:10px; flex-direction:column; margin-bottom:16px; }
+  #writeForm.open{ display:flex; }
+  #writeForm input, #writeForm textarea{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font-size:14px; font-family:inherit;
+  }
+  #writeForm .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  #writeForm .row input{ flex:1; min-width:140px; }
+
+  ul.posts{ list-style:none; margin:0; padding:0; }
+  ul.posts li{
+    border:1px solid var(--line); border-radius:11px; padding:13px 16px; margin-bottom:10px; background:var(--paper);
+    transition:.12s;
+  }
+  ul.posts li:hover{ box-shadow:0 4px 12px rgba(15,23,42,.07); }
+  ul.posts .ptitle{ font-weight:600; font-size:15px; color:var(--navy); }
+  ul.posts .meta{ color:var(--muted); font-size:12px; margin:2px 0 6px; }
+  ul.posts .summary{ font-size:13.5px; color:#374151; }
+  .empty{ color:var(--muted); font-size:14px; padding:14px; text-align:center; }
+
+  @media (max-width:560px){
+    .nav{ height:auto; flex-direction:column; align-items:flex-start; padding:10px 16px; gap:8px; }
+    dl.spec{ grid-template-columns:74px 1fr; }
+  }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">사내 HPC 포털</div>
+    <div class="menu">
+      <a href="index.html">홈</a>
+      <a href="monitoring.html">모니터링</a>
+      <a href="wiki.html" class="active">정보공유</a>
+      <a href="chat.html">실시간 채팅</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="page-head">
+      <h1>정보공유 · 위키</h1>
+      <p>서버별 환경 구성, 클러스터 사용 방법, 그리고 팀원들이 직접 쌓은 노하우를 한곳에서 확인하세요.</p>
+    </div>
+
+    <h2 class="section">서버별 환경 구성</h2>
+    <div class="servers">
+
+      <div class="card server-card">
+        <h3>gpu-cluster <span class="badge b-gpu">GPU</span></h3>
+        <p class="sub">딥러닝 학습/추론용 GPU 노드 (총 8노드)</p>
+        <dl class="spec">
+          <dt>OS</dt><dd>Ubuntu 22.04 LTS</dd>
+          <dt>CPU</dt><dd>AMD EPYC 7763 64코어 x2</dd>
+          <dt>GPU</dt><dd>NVIDIA A100 80GB x4</dd>
+          <dt>메모리</dt><dd>512GB DDR4</dd>
+          <dt>스토리지</dt><dd>NVMe 3.2TB (로컬 scratch)</dd>
+          <dt>접속</dt><dd><code class="inline">ssh 사번@gpu-cluster.hpc.corp.local</code></dd>
+        </dl>
+        <div class="mods" style="margin-top:12px;">
+          <span>python 3.10</span><span>CUDA 12.2</span><span>cuDNN 8.9</span>
+          <span>conda 23.7</span><span>OpenMPI 4.1</span><span>NCCL 2.18</span><span>PyTorch 2.2</span>
+        </div>
+      </div>
+
+      <div class="card server-card">
+        <h3>cpu-cluster <span class="badge b-cpu">CPU</span></h3>
+        <p class="sub">대규모 병렬 시뮬레이션/배치 연산용 CPU 노드 (총 24노드)</p>
+        <dl class="spec">
+          <dt>OS</dt><dd>Rocky Linux 8.9</dd>
+          <dt>CPU</dt><dd>Intel Xeon Platinum 8480+ 56코어 x2</dd>
+          <dt>GPU</dt><dd>없음</dd>
+          <dt>메모리</dt><dd>256GB DDR5</dd>
+          <dt>스토리지</dt><dd>공유 Lustre /scratch 1.5PB</dd>
+          <dt>접속</dt><dd><code class="inline">ssh 사번@cpu-cluster.hpc.corp.local</code></dd>
+        </dl>
+        <div class="mods" style="margin-top:12px;">
+          <span>python 3.11</span><span>conda 23.7</span><span>OpenMPI 4.1</span>
+          <span>Intel MKL</span><span>GCC 11</span><span>Slurm 23.02</span>
+        </div>
+      </div>
+
+      <div class="card server-card">
+        <h3>fat-node <span class="badge b-fat">대용량 메모리</span></h3>
+        <p class="sub">초대용량 데이터 전처리/인메모리 분석용 노드 (2노드)</p>
+        <dl class="spec">
+          <dt>OS</dt><dd>Ubuntu 22.04 LTS</dd>
+          <dt>CPU</dt><dd>AMD EPYC 9654 96코어 x2</dd>
+          <dt>GPU</dt><dd>NVIDIA L40S 48GB x2</dd>
+          <dt>메모리</dt><dd>4TB DDR5</dd>
+          <dt>스토리지</dt><dd>NVMe 15TB (로컬)</dd>
+          <dt>접속</dt><dd><code class="inline">ssh 사번@fat-node.hpc.corp.local</code></dd>
+        </dl>
+        <div class="mods" style="margin-top:12px;">
+          <span>python 3.10</span><span>CUDA 12.2</span><span>conda 23.7</span>
+          <span>R 4.3</span><span>Spark 3.5</span><span>OpenMPI 4.1</span>
+        </div>
+      </div>
+
+    </div>
+
+    <h2 class="section">클러스터 사용 방법</h2>
+    <div class="card">
+      <ol class="steps">
+        <li>
+          <h4>1) SSH로 로그인 노드 접속</h4>
+          <p style="margin:0; color:var(--muted); font-size:13.5px;">사내 VPN 연결 후 본인 사번 계정으로 접속합니다. 최초 접속 시 발급받은 공개키를 등록하세요.</p>
+<pre><span class="pr">$</span> ssh 사번@gpu-cluster.hpc.corp.local
+<span class="cm"># 비밀번호 대신 SSH 키 사용 권장</span>
+<span class="pr">$</span> ssh-copy-id 사번@gpu-cluster.hpc.corp.local</pre>
+        </li>
+        <li>
+          <h4>2) 환경 설정 (module load / conda activate)</h4>
+          <p style="margin:0; color:var(--muted); font-size:13.5px;">필요한 모듈을 불러오거나 본인 conda 환경을 활성화합니다.</p>
+<pre><span class="pr">$</span> module avail              <span class="cm"># 사용 가능한 모듈 확인</span>
+<span class="pr">$</span> module load cuda/12.2 openmpi/4.1
+<span class="pr">$</span> conda activate myenv      <span class="cm"># 개인 conda 환경 활성화</span></pre>
+        </li>
+        <li>
+          <h4>3) 작업 제출 (sbatch)</h4>
+          <p style="margin:0; color:var(--muted); font-size:13.5px;">로그인 노드에서 직접 학습을 돌리지 말고, 반드시 Slurm 배치 스크립트로 제출하세요.</p>
+<pre><span class="cm">#!/bin/bash</span>
+<span class="cm">#SBATCH --job-name=train-resnet</span>
+<span class="cm">#SBATCH --partition=gpu</span>
+<span class="cm">#SBATCH --nodes=1</span>
+<span class="cm">#SBATCH --gres=gpu:a100:2</span>
+<span class="cm">#SBATCH --cpus-per-task=16</span>
+<span class="cm">#SBATCH --mem=128G</span>
+<span class="cm">#SBATCH --time=12:00:00</span>
+<span class="cm">#SBATCH --output=logs/%x-%j.out</span>
+
+module load cuda/12.2
+conda activate myenv
+
+srun python train.py --epochs 50 --batch-size 256</pre>
+<pre><span class="pr">$</span> sbatch train.sh          <span class="cm"># 위 스크립트를 train.sh로 저장 후 제출</span>
+Submitted batch job 184302</pre>
+        </li>
+        <li>
+          <h4>4) 상태 확인 (squeue)</h4>
+          <p style="margin:0; color:var(--muted); font-size:13.5px;">내 작업의 대기/실행 상태를 확인하고, 필요 시 취소합니다.</p>
+<pre><span class="pr">$</span> squeue --me            <span class="cm"># 내 작업만 조회</span>
+<span class="pr">$</span> scontrol show job 184302  <span class="cm"># 상세 정보</span>
+<span class="pr">$</span> scancel 184302         <span class="cm"># 작업 취소</span></pre>
+        </li>
+      </ol>
+    </div>
+
+    <h2 class="section">노하우 · 팁 게시판</h2>
+    <div class="card">
+      <div class="board-tools">
+        <input type="text" id="searchInput" placeholder="제목으로 검색… (예: OOM, conda, Slurm)" />
+        <button class="btn ghost" id="toggleWrite">＋ 글쓰기</button>
+      </div>
+
+      <form id="writeForm" autocomplete="off">
+        <input type="text" id="newTitle" placeholder="제목" />
+        <div class="row">
+          <input type="text" id="newAuthor" placeholder="작성자" />
+        </div>
+        <textarea id="newSummary" rows="2" placeholder="짧은 요약"></textarea>
+        <div class="row">
+          <button type="submit" class="btn">등록</button>
+          <button type="button" class="btn ghost" id="cancelWrite">취소</button>
+        </div>
+      </form>
+
+      <ul class="posts" id="postList"></ul>
+      <div class="empty" id="emptyMsg" style="display:none;">검색 결과가 없습니다.</div>
+    </div>
+  </div>
+
+<script>
+  var posts = [
+    { title:"A100에서 PyTorch OOM 줄이는 법", author:"김연구", date:"2026-06-18",
+      summary:"gradient checkpointing + AMP(mixed precision) 조합으로 메모리 30% 절약한 실전 설정 정리." },
+    { title:"conda 환경 빠르게 복제하기", author:"박엔지니어", date:"2026-06-15",
+      summary:"environment.yml export & --clone 비교, 그리고 mamba로 설치 속도 5배 올린 팁." },
+    { title:"Slurm 작업이 PENDING에서 안 풀릴 때 체크리스트", author:"이운영", date:"2026-06-12",
+      summary:"파티션 자원 부족 / QOS 한도 / 잘못된 gres 요청 등 PENDING 원인 6가지 진단법." },
+    { title:"Lustre /scratch 빠르게 쓰는 I/O 패턴", author:"최데이터", date:"2026-06-09",
+      summary:"작은 파일 수십만 개 대신 tar로 묶어 읽기, stripe count 조절로 처리량 개선." },
+    { title:"멀티노드 분산학습 NCCL 타임아웃 해결", author:"김연구", date:"2026-06-05",
+      summary:"NCCL_SOCKET_IFNAME, NCCL_DEBUG 설정과 인피니밴드 인터페이스 지정으로 행(hang) 제거." },
+    { title:"fat-node에서 4TB 메모리 인메모리 전처리 팁", author:"정분석", date:"2026-06-02",
+      summary:"pandas 대신 polars로 lazy 처리, 메모리 모니터링은 htop+nvidia-smi 동시 활용." },
+    { title:"sbatch 로그를 작업별로 깔끔하게 모으기", author:"박엔지니어", date:"2026-05-28",
+      summary:"--output=logs/%x-%j.out 패턴과 회전(rotation) 스크립트로 로그 폭주 방지." },
+    { title:"VS Code Remote-SSH로 클러스터 개발환경 세팅", author:"이운영", date:"2026-05-24",
+      summary:"로그인 노드 부하 줄이려고 srun으로 잡은 노드에 직접 붙는 설정 가이드." }
+  ];
+
+  var listEl   = document.getElementById("postList");
+  var emptyMsg = document.getElementById("emptyMsg");
+  var searchEl = document.getElementById("searchInput");
+
+  function render(){
+    var q = (searchEl.value || "").trim().toLowerCase();
+    var filtered = posts.filter(function(p){
+      return p.title.toLowerCase().indexOf(q) !== -1;
+    });
+    listEl.innerHTML = "";
+    if(filtered.length === 0){
+      emptyMsg.style.display = "block";
+      return;
+    }
+    emptyMsg.style.display = "none";
+    filtered.forEach(function(p){
+      var li = document.createElement("li");
+      li.innerHTML =
+        '<div class="ptitle"></div>' +
+        '<div class="meta"></div>' +
+        '<div class="summary"></div>';
+      li.querySelector(".ptitle").textContent  = p.title;
+      li.querySelector(".meta").textContent    = p.author + " · " + p.date;
+      li.querySelector(".summary").textContent = p.summary;
+      listEl.appendChild(li);
+    });
+  }
+
+  searchEl.addEventListener("input", render);
+
+  var form = document.getElementById("writeForm");
+  document.getElementById("toggleWrite").addEventListener("click", function(){
+    form.classList.toggle("open");
+  });
+  document.getElementById("cancelWrite").addEventListener("click", function(){
+    form.classList.remove("open");
+  });
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var t = document.getElementById("newTitle").value.trim();
+    var a = document.getElementById("newAuthor").value.trim();
+    var s = document.getElementById("newSummary").value.trim();
+    if(!t){ alert("제목을 입력하세요."); return; }
+    var today = new Date().toISOString().slice(0,10);
+    posts.unshift({ title:t, author:a || "익명", date:today, summary:s || "(요약 없음)" });
+    document.getElementById("newTitle").value = "";
+    document.getElementById("newAuthor").value = "";
+    document.getElementById("newSummary").value = "";
+    searchEl.value = "";
+    form.classList.remove("open");
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
