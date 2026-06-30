@@ -5,18 +5,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>사용량 통계 — 사내 HPC 포털</title>
   <link rel="stylesheet" href="/static/common.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:18px 0 22px;}
+    .kpi{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+    .kpi .label{font-size:.78rem;color:var(--muted);margin-bottom:4px;}
+    .kpi .value{font-size:1.5rem;font-weight:700;}
+    .kpi .value.blue{color:var(--blue);} .kpi .value.green{color:var(--green);} .kpi .value.orange{color:var(--orange);}
+    .chart-box{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;}
+    .chart-box h3{margin:0 0 10px;font-size:1rem;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    @media(max-width:880px){.grid2{grid-template-columns:1fr;}}
+  </style>
 </head>
 <body>
   <div id="nav-placeholder"></div>
 
   <div class="container">
     <h1>사용량 통계</h1>
-    <p class="subtitle">노드별/사용자별 사용량 집계 · 추이 차트.</p>
+    <p class="subtitle">노드별/사용자별 GPU-hours 집계 · 추이 · 구성.</p>
 
-    <!-- TODO(팀원2): SPEC §7.4 fetch 배선 — /api/stats/usage
-         (by_node / by_user / trend), Chart.js 막대·라인 차트. -->
-    <div id="content" class="card">콘텐츠 영역 (구현 예정)</div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">총 GPU-hours</div><div class="value blue" id="kpi-total">-</div></div>
+      <div class="kpi"><div class="label">일평균 GPU-hours</div><div class="value" id="kpi-avg">-</div></div>
+      <div class="kpi"><div class="label">최번일(최대 사용)</div><div class="value orange" id="kpi-peak">-</div></div>
+      <div class="kpi"><div class="label">최다 사용자</div><div class="value green" id="kpi-top">-</div></div>
+      <div class="kpi"><div class="label">활성 사용자</div><div class="value" id="kpi-users">-</div></div>
+      <div class="kpi"><div class="label">사용 노드 수</div><div class="value" id="kpi-nodes">-</div></div>
+    </div>
+
+    <div class="chart-box">
+      <h3>일자별 GPU 사용량 추이</h3>
+      <canvas id="trendChart" height="90"></canvas>
+    </div>
+
+    <div class="grid2">
+      <div class="chart-box"><h3>노드별 GPU-hours</h3><canvas id="nodeChart" height="150"></canvas></div>
+      <div class="chart-box"><h3>사용자별 사용량 순위</h3><canvas id="userChart" height="150"></canvas></div>
+    </div>
+    <div class="grid2">
+      <div class="chart-box"><h3>사용자 사용량 비중</h3><canvas id="shareChart" height="150"></canvas></div>
+      <div class="chart-box"><h3>노드별 사용자 구성</h3><canvas id="stackChart" height="150"></canvas></div>
+    </div>
   </div>
+
+  <script>
+    const C={blue:"#1d4ed8",green:"#047857",orange:"#b45309"};
+    const PAL=["#1d4ed8","#047857","#b45309","#7c3aed","#0891b2","#be123c","#15803d","#a16207"];
+    let nodeChart=null,userChart=null,trendChart=null,shareChart=null,stackChart=null;
+
+    function makeBar(ctx,labels,data,color,horizontal){
+      return new Chart(ctx,{type:"bar",
+        data:{labels,datasets:[{label:"GPU-hours",data,backgroundColor:color,borderRadius:6}]},
+        options:{indexAxis:horizontal?"y":"x",responsive:true,plugins:{legend:{display:false}},
+          scales:{x:{beginAtZero:true},y:{beginAtZero:true}}}});
+    }
+    function makeLine(ctx,labels,data){
+      return new Chart(ctx,{type:"line",
+        data:{labels,datasets:[{label:"GPU-hours",data,borderColor:C.blue,backgroundColor:"rgba(29,78,216,.12)",fill:true,tension:.3,pointRadius:3}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    }
+    function makeDoughnut(ctx,labels,data){
+      return new Chart(ctx,{type:"doughnut",
+        data:{labels,datasets:[{data,backgroundColor:PAL,borderColor:"#fff",borderWidth:2}]},
+        options:{responsive:true,plugins:{legend:{position:"right"}}}});
+    }
+    function makeStacked(ctx,nodes,series){
+      return new Chart(ctx,{type:"bar",
+        data:{labels:nodes,datasets:series.map((s,i)=>({label:s.user,data:s.data,backgroundColor:PAL[i%PAL.length]}))},
+        options:{responsive:true,plugins:{legend:{position:"bottom"}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}}});
+    }
+    const setText=(id,v)=>{document.getElementById(id).textContent=v;};
+
+    async function load(){
+      let d; try{ d=await (await fetch("/api/stats/usage")).json(); }catch(e){ return; }
+      const s=d.summary||{};
+      setText("kpi-total",Number(s.total??0).toFixed(1));
+      setText("kpi-avg",Number(s.avgPerDay??0).toFixed(1));
+      setText("kpi-peak",s.peakDay?s.peakDay.slice(5):"-");
+      setText("kpi-top",d.by_user.length?d.by_user[0].user:"-");
+      setText("kpi-users",s.activeUsers??0);
+      setText("kpi-nodes",s.activeNodes??0);
+
+      const nL=d.by_node.map(x=>x.node), nD=d.by_node.map(x=>x.gpu_hours);
+      const uL=d.by_user.map(x=>x.user), uD=d.by_user.map(x=>x.gpu_hours);
+      const tL=d.trend.map(x=>x.day.slice(5)), tD=d.trend.map(x=>x.gpu_hours);
+      const stk=d.stacked||{nodes:[],series:[]};
+
+      if(!nodeChart){
+        nodeChart=makeBar(document.getElementById("nodeChart"),nL,nD,C.green,false);
+        userChart=makeBar(document.getElementById("userChart"),uL,uD,C.orange,true);
+        trendChart=makeLine(document.getElementById("trendChart"),tL,tD);
+        shareChart=makeDoughnut(document.getElementById("shareChart"),uL,uD);
+        stackChart=makeStacked(document.getElementById("stackChart"),stk.nodes,stk.series);
+      }else{
+        nodeChart.data.labels=nL; nodeChart.data.datasets[0].data=nD; nodeChart.update("none");
+        userChart.data.labels=uL; userChart.data.datasets[0].data=uD; userChart.update("none");
+        trendChart.data.labels=tL; trendChart.data.datasets[0].data=tD; trendChart.update("none");
+        shareChart.data.labels=uL; shareChart.data.datasets[0].data=uD; shareChart.update("none");
+        stackChart.data.labels=stk.nodes;
+        stackChart.data.datasets=stk.series.map((x,i)=>({label:x.user,data:x.data,backgroundColor:PAL[i%PAL.length]}));
+        stackChart.update("none");
+      }
+    }
+    load();
+    setInterval(load,30000);
+  </script>
 
   <script src="/static/include.js"></script>
   <script src="/static/chat-widget.js"></script>

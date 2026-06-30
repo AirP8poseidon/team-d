@@ -106,17 +106,21 @@
 
 ---
 
-### [#11] 서브에이전트로 공통 뼈대 스캐폴딩 + 독립 검토 에이전트 + 수집 심(collector)
-- 작성자(팀원): LeeSeongHoo (팀장)
-- 목표: 공통 뼈대(FastAPI/SQLite + 잠금결정 6건)를 서브에이전트로 짓고, 별도 검토 에이전트로 적대적 검증. 실서버 연동 대비 정보수집 체계(collector 심)도 함께.
+### [#7] 공통 뼈대(hpc-portal)에 내 구현 이식 + .html 활성화
+- 작성자(팀원): 정승명 (팀원2)
+- 목표: 팀장이 올린 공통 뼈대(`hpc-portal/` 스캐폴딩)에 내 stats/system 구현을 이식하고 두 페이지를 실제 앱에서 활성화.
 - 에이전트에게 시킨 것(실제 프롬프트 핵심 인용):
-  > "서브에이전트 불러와서 공통 뼈대 스캐폴딩 시작해줘, 그리고 결과 검토하는 에이전트 만들어줘. 그리고 실제로 서버와 연동할 정보수집 체계도 만들어줘야할거같음. 실제 서버 연동은 어떤식으로 함?"
-- 사용한 기법: **(a) 서브에이전트 2개 — 스캐폴딩 에이전트 + 독립 검토 에이전트** / (c) 재사용 산출물 SPEC 기준
-- 결과: `hpc-portal/` 생성(db.py·main.py·routers×5·static·data·tests·requirements). 결정 1A(WAL+busy_timeout 요청별 연결)·2A(멱등 시드, collector는 INSERT OR REPLACE)·3A(/usage/latest 노드별 최신1건)·4A(include.js nav 자가주입)·5A(파서 가드)·6A(pytest 5건)·T7(채팅 LIMIT50)·T8(NODES 상수) 전부 구현. **수집 심**: `collectors/{base,mock,slurm,prometheus}.py` + 5초 백그라운드 주기 갱신 → 목업 동작, 실연동은 slurm.py 드롭인. 실서버 연동 방식 정리: DB=읽기모델이라 writer만 교체(① 온클러스터 squeue/sinfo/nvidia-smi subprocess ② Prometheus API 쿼리 ③ 푸시형 데몬). 검토 에이전트 VERDICT=PASS(2번째 갱신 틱 idempotent·파서 무중단 실측), P3 1건(선행 빈 줄→헤더가 데이터로 먹히는 잠복 버그) 발견 → 헤더를 '첫 비어있지 않은 줄'로 skip하게 수정, 회귀 프로브 통과. SPEC §7.1을 코드(추가 source 필드·/usage/latest)에 맞춰 갱신.
-- 막힘 → 해결: 실연동 범위가 모호(목업 vs 실수집기) → 수집 심만 지금 구축(A)으로 잠가 데모 안전 + 실연동 준비. 파서 P3는 5A 보장을 깨므로 잠복이어도 즉시 수정.
+  > "새로 업로드된 main 브랜치를 업데이트하고 이것을 기반으로 팀원2(정승명)의 사용량 통계/시스템 상태 페이지 구현 업데이트하고 .html도 활성화 시작."
+- 사용한 기법: (b) git — origin/main(afe6e56) 머지로 뼈대 반영 / (c) 재사용 산출물 — 내 리치 UI·차트 로직을 뼈대 규약에 맞춰 재사용
+- 결과:
+  - **라우터 보강**(`hpc-portal/routers/`): `system.py`에 `GET /api/system/history`(health_history 자기완결 확장, db.py 미수정) 추가, `stats.py` 응답에 `summary`·`stacked` 추가(핵심 키 `by_node/by_user/trend` 유지). 팀장 `db_dep` 의존성 패턴 그대로 사용.
+  - **.html 활성화**(`hpc-portal/static/{system,stats}.html`): 스텁을 **공통 nav(`include.js` 자가주입)+`common.css` 토큰+Chart.js** 기반 리치 페이지로 교체 — 시스템: 위험 배너·전체/주의/위험 필터·CPU 온도 추이·노드 카드(게이지+디스크/NFS 칩). 통계: KPI 6종·추이·노드별·사용자순위·비중 도넛·노드별 사용자 구성(5차트). 채팅 위젯 한 줄 로드 유지.
+  - **데이터/검증**: `data/sample_health.txt`를 collector 포맷 유지하며 데모 분포(정상4/주의2/위험2)로 정리. `tests/test_team2_ext.py` 추가(/history·summary·stacked) → **hpc-portal pytest 7 passed**(팀장 5 + 내 2). 실제 앱(`main.py`) 구동 → Edge 헤드리스로 두 페이지 공통 nav·차트·채팅 위젯 렌더 확인.
+  - **정리**: 스캐폴딩 이전 위치였던 루트 `data/`·`routers/`·`static/`·`tests/` 중복 제거(단일 소스 = `hpc-portal/`).
+- 막힘 → 해결: ① node_health가 이제 collector가 채우는 읽기 모델 → 내 라우터는 파싱 대신 읽기만, 온도 추이는 자기완결 확장 테이블로 분리(db.py 미수정). ② 개인 로그에 머지로 팀장 항목 유입 → 내 항목만 남김.
 
 ---
 
 ## 마무리 요약 (1~2줄)
-- 가장 효과적이었던 에이전트 활용법: **계획(체크목록/방법/시각화) 선확정 → 구현 → 팀 SPEC(잠금) 반영 정합**까지, 소유 파일만으로 충돌 없이 빠르게 구현·단독 검증(pytest+헤드리스 스크린샷).
-- 다른 팀원이 그대로 따라 하려면 필요한 것: SPEC 소유 파일 경계 + 라우터의 "자체 테이블/시드 + 팀장 `get_db` 자동 폴백" 패턴(통합 전에도 `/docs` 단독 동작) + 6A pytest 정합 테스트.
+- 가장 효과적이었던 에이전트 활용법: **계획 선확정 → 단독 구현 → 팀 SPEC(잠금) 정합 → 공통 뼈대 이식·활성화**까지, 소유 경계 안에서 충돌 없이 통합(pytest 7건 + 헤드리스 스크린샷으로 실앱 검증).
+- 다른 팀원이 그대로 따라 하려면 필요한 것: 뼈대 규약(`db_dep` 읽기 모델 + `common.css`/`include.js` nav + collector가 채우는 node_health) 위에 자기 라우터·페이지만 얹기. 확장 기능은 db.py 미수정 자기완결 테이블로.
