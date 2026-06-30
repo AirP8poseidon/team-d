@@ -92,3 +92,7 @@
 
 # 2026-06-30 21:34:39 외부공개+자동갱신+홈 GPU→CPU (#24)
 2026-06-30 21:34:39 static/index.html(GPU→CPU) · refresh_loop.ps1 · run_server.bat · run_refresh.bat
+
+# 2026-06-30 21:46:00 제출물 최종 정리 (#25)
+2026-06-30 21:46:00 submit/assets/{QUICKSTART,prompts,CLAUDE_hpc-portal,TEAM_SYNC,README}.md
+2026-06-30 21:46:00 submit/{CHECKLIST,BEFORE_AFTER,PROCESS_LOG}.md 최종화
