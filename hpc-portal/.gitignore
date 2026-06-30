@@ -1,0 +1,11 @@
+# 런타임 DB (멱등 재생성됨 — 커밋 금지)
+app.db
+app.db-wal
+app.db-shm
+*_test.db
+
+# 가상환경 / 캐시
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc

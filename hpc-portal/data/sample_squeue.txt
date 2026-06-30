@@ -1,0 +1,9 @@
+JOBID USER NODE PURPOSE STATUS ELAPSED
+101 kim node04 deep-learning RUNNING 02:10
+102 lee node02 wrf-test PENDING 00:00
+103 park node01 data-preprocess RUNNING 00:45
+104 choi node05 cfd-sim RUNNING 05:30
+105 kim node07 hpl-benchmark RUNNING 01:20
+106 lee node08 genome-align PENDING 00:00
+107 park node03 fluent-run RUNNING 03:05
+108 choi node06 ml-train RUNNING 00:15

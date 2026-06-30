@@ -1,0 +1,8 @@
+# 사내 HPC 포털 — 런타임 의존성 (팀장 소유)
+# 설치 후 `pip freeze` 로 버전을 핀해 재현성 확보 권장.
+fastapi
+uvicorn[standard]
+
+# --- 테스트 전용 (런타임 불필요) ---
+pytest
+httpx          # FastAPI/Starlette TestClient 가 내부적으로 사용 (test-only)
