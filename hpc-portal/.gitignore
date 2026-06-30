@@ -14,3 +14,6 @@ __pycache__/
 data/incoming/*.json
 
 demo.db*
+
+server.out.log
+server.err.log
