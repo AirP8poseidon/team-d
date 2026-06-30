@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>모니터링 — 사내 HPC 포털</title>
+  <link rel="stylesheet" href="/static/common.css" />
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <div class="container">
+    <h1>모니터링</h1>
+    <p class="subtitle">노드 CPU/GPU/메모리 + 현재 작업 맥락(누가·왜) 표시·등록.</p>
+
+    <!-- TODO(팀장): SPEC §7.1 fetch 배선 — /api/monitoring/nodes·jobs·usage(/latest),
+         POST /api/monitoring/usage, Chart.js GPU 막대 차트. 노드 카드는 usage/latest(결정 3A). -->
+    <div id="content" class="card">콘텐츠 영역 (구현 예정)</div>
+  </div>
+
+  <script src="/static/include.js"></script>
+  <script src="/static/chat-widget.js"></script>
+</body>
+</html>

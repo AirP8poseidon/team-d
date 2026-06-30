@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>시스템 상태 — 사내 HPC 포털</title>
+  <link rel="stylesheet" href="/static/common.css" />
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <div class="container">
+    <h1>시스템 상태</h1>
+    <p class="subtitle">node01~08 온도 · 디스크 · NFS 연결 상태.</p>
+
+    <!-- TODO(팀원2): SPEC §7.4 fetch 배선 — /api/system/health.
+         임계값 초과 시 색상 경고(green/orange/red 토큰). -->
+    <div id="content" class="card">콘텐츠 영역 (구현 예정)</div>
+  </div>
+
+  <script src="/static/include.js"></script>
+  <script src="/static/chat-widget.js"></script>
+</body>
+</html>

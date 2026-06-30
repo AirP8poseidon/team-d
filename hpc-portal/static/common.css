@@ -1,0 +1,82 @@
+/* 공통 디자인 토큰 (팀장 소유) — SPEC §8. 모든 페이지 동일. */
+:root {
+  --bg: #f4f6fb;
+  --paper: #fff;
+  --ink: #172033;
+  --muted: #64748b;
+  --line: #d8dee9;
+  --blue: #1d4ed8;
+  --navy: #0f172a;
+  --green: #047857;
+  --orange: #b45309;
+  --red: #b91c1c;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+  line-height: 1.5;
+}
+
+/* ── 상단 네비 (네이비 배경, 좌측 브랜드 + 우측 5링크) ───────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--navy);
+  color: #fff;
+  padding: 0 24px;
+  height: 56px;
+}
+.nav .brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+  text-decoration: none;
+}
+.nav .links {
+  display: flex;
+  gap: 4px;
+}
+.nav .links a {
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.nav .links a:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.nav .links a.active {
+  color: #fff;
+  background: var(--blue);
+  font-weight: 600;
+}
+
+/* ── 레이아웃 컨테이너 ──────────────────────────────────────────────────── */
+.container {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px;
+}
+h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.subtitle { color: var(--muted); margin: 0 0 20px; }
+
+/* ── 카드 ──────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+/* ── 상태 색상 토큰 ─────────────────────────────────────────────────────── */
+.status-ok, .status-green { color: var(--green); }
+.status-warning, .status-orange { color: var(--orange); }
+.status-critical, .status-red { color: var(--red); }
+.accent { color: var(--blue); }

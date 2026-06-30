@@ -243,7 +243,8 @@ node04 71 warning ok 2026-06-30T14:00:00
 |---|---|---|
 | `GET /api/monitoring/nodes` | — | `[{node, status, cpu, gpu, mem, gpu_model}]` |
 | `GET /api/monitoring/jobs` | — | `[{job_id, user, node, purpose, status, elapsed}]` |
-| `GET /api/monitoring/usage` | — | `[{id, node, user, purpose, eta, created_at}]` |
+| `GET /api/monitoring/usage` | — | `[{id, node, user, purpose, eta, source, created_at}]` |
+| `GET /api/monitoring/usage/latest` | — | `[{node, user, purpose, eta, source, created_at}]` (노드별 최신 1건 — 카드용, 결정 3A) |
 | `POST /api/monitoring/usage` | `{node, user, purpose, eta, source?}` | `{id, node, user, purpose, eta, source, created_at}` |
 
 ### 7.2 위키 (팀원1)
