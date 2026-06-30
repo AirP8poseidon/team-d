@@ -72,3 +72,6 @@
 2026-06-30 19:38 hpc-portal/agent/scan_once.sh      (master 1회성 순회 14/14)
 2026-06-30 19:41:22 hpc-portal/CLAUDE.md                            (앱 기술 가이드)
 2026-06-30 19:41:22 submit/PROCESS_LOG.md                           (#17·#18 append)
+
+# 2026-06-30 19:46:47 모니터링 UI CPU중심 reframe (#19)
+2026-06-30 19:46:47 hpc-portal/static/monitoring.html  (GPU제거·모델작업 중심·browse 렌더 검증)
