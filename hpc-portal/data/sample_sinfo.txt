@@ -1,0 +1,9 @@
+NODE STATUS CPU GPU MEM GPU_MODEL
+node01 alloc 45 10 38 A100
+node02 idle 8 0 20 A100
+node03 alloc 62 55 60 A100
+node04 alloc 84 91 76 A100
+node05 alloc 70 65 58 V100
+node06 alloc 30 40 35 V100
+node07 alloc 78 80 70 A100
+node08 idle 5 0 15 V100
