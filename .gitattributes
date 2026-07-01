@@ -1,0 +1,5 @@
+# 셸 스크립트는 항상 LF (Windows에서 커밋해도 mac/linux 실행 보장)
+*.sh text eol=lf
+# 노드 수집기(리눅스에서 실행)도 LF
+hpc-portal/agent/*.sh text eol=lf
+hpc-portal/agent/*.py text eol=lf
