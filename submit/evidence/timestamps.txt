@@ -96,3 +96,6 @@
 # 2026-06-30 21:46:00 제출물 최종 정리 (#25)
 2026-06-30 21:46:00 submit/assets/{QUICKSTART,prompts,CLAUDE_hpc-portal,TEAM_SYNC,README}.md
 2026-06-30 21:46:00 submit/{CHECKLIST,BEFORE_AFTER,PROCESS_LOG}.md 최종화
+
+# 2026-07-01 15:16:48 실행 스크립트 세트 Run/ (#26)
+2026-07-01 15:16:48 Run/{README,setup,start_server,start_server_mock,start_refresh,stop}.{bat,sh}
